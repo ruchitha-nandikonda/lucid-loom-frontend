@@ -28,7 +28,7 @@ app.add_middleware(
         "http://localhost:3000",
         "https://lucid-loom.vercel.app",
     ],
-    allow_origin_regex=r"^https://.*\.vercel\.app$",  # Allow all Vercel preview deployments
+    allow_origin_regex=r"https://.*\.vercel\.app",  # Allow all Vercel preview deployments
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
