@@ -48,7 +48,11 @@ def health():
 
 # ---------- Auth routes ----------
 @app.post("/auth/register", response_model=schemas.RegisterResponse)
-def register(user_in: schemas.UserCreate, db: Session = Depends(get_db)):
+def register(
+    user_in: schemas.UserCreate,
+    background_tasks: BackgroundTasks,
+    db: Session = Depends(get_db)
+):
     """Register a new user - sends OTP email for verification"""
     existing = auth.get_user_by_email(db, user_in.email)
     if existing:
@@ -77,8 +81,8 @@ def register(user_in: schemas.UserCreate, db: Session = Depends(get_db)):
     existing.otp_expires = otp_expires
     db.commit()
     
-    # Send OTP email
-    email_service.send_otp_email(existing.email, otp_code)
+    # Send OTP email in background (non-blocking)
+    background_tasks.add_task(email_service.send_otp_email, existing.email, otp_code)
     
     return {
         "message": "Verification code sent to your email. Please check your inbox.",
