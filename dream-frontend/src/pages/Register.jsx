@@ -23,7 +23,15 @@ export default function Register() {
       navigate(`/verify-otp?email=${encodeURIComponent(email)}&type=signup`);
     } catch (err) {
       console.error("Registration error:", err);
-      setError(err.response?.data?.detail || err.message || "Registration failed");
+      if (err.code === 'ECONNABORTED' || err.message?.includes('timeout')) {
+        setError("Request timed out. Please check your connection and try again.");
+      } else if (err.response?.status === 403) {
+        setError("Email verification required. Please check your email for the verification code.");
+        // Still navigate to verify-otp even on 403 (user might have registered)
+        navigate(`/verify-otp?email=${encodeURIComponent(email)}&type=signup`);
+      } else {
+        setError(err.response?.data?.detail || err.message || "Registration failed");
+      }
       setLoading(false);
     }
   }
