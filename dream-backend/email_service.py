@@ -68,11 +68,18 @@ def send_otp_email(to_email: str, otp_code: str) -> bool:
         msg.attach(part1)
         msg.attach(part2)
         
-        # Send email
-        with smtplib.SMTP(SMTP_HOST, SMTP_PORT) as server:
-            server.starttls()
-            server.login(SMTP_USER, SMTP_PASSWORD)
-            server.send_message(msg)
+        # Send email - support both STARTTLS (587) and SSL (465)
+        if SMTP_PORT == 465:
+            # Use SSL for port 465
+            with smtplib.SMTP_SSL(SMTP_HOST, SMTP_PORT) as server:
+                server.login(SMTP_USER, SMTP_PASSWORD)
+                server.send_message(msg)
+        else:
+            # Use STARTTLS for port 587 (default)
+            with smtplib.SMTP(SMTP_HOST, SMTP_PORT) as server:
+                server.starttls()
+                server.login(SMTP_USER, SMTP_PASSWORD)
+                server.send_message(msg)
         
         print(f"✅ OTP email sent to {to_email}")
         return True
