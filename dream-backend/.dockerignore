@@ -1,0 +1,10 @@
+venv/
+__pycache__/
+*.pyc
+*.db
+.env
+*.log
+.git/
+.gitignore
+dreams.db
+

@@ -1,0 +1,33 @@
+╔══════════════════════════════════════════════════════════════╗
+║           YOU'RE ON THE RIGHT PAGE! 🎯                        ║
+╚══════════════════════════════════════════════════════════════╝
+
+IN THE DIALOG BOX:
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+✅ Name: Keep "My Test Key" or change to "Lucid Loom"
+✅ Project: "Default project" is fine
+✅ Permissions: "All" is perfect (already selected)
+✅ Click: "Create secret key" button
+
+⚠️  IMPORTANT:
+   → You'll see your key ONCE
+   → Copy it immediately!
+   → It looks like: sk-proj-abc123...
+
+AFTER YOU GET YOUR KEY:
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+1. Open Terminal
+
+2. Run:
+   ./ONE_COMMAND_SETUP.sh
+
+3. Paste your key when asked
+
+4. Restart backend (Ctrl+C, then restart uvicorn)
+
+5. Refresh browser - it works! ✨
+
+╔══════════════════════════════════════════════════════════════╗
+║  You're almost done! Just create the key and paste it!      ║
+╚══════════════════════════════════════════════════════════════╝

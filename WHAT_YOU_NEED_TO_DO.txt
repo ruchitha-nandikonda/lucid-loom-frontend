@@ -1,0 +1,46 @@
+╔══════════════════════════════════════════════════════════════╗
+║         What I Can't Do vs What You Need to Do                ║
+╚══════════════════════════════════════════════════════════════╝
+
+❌ I CANNOT:
+   • Access your OpenAI account
+   • Log into OpenAI for you
+   • Create API keys in your account
+   • See your API key
+   • Know your login credentials
+
+✅ I CAN:
+   • Check your setup
+   • Create helper scripts
+   • Fix code bugs
+   • Guide you step-by-step
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+📋 WHAT YOU NEED TO DO (2 minutes):
+
+1. Get your API key:
+   → Open: https://platform.openai.com/api-keys
+   → Sign in (YOUR account)
+   → Click "Create new secret key"
+   → Copy it
+
+2. Run setup script:
+   → ./ONE_COMMAND_SETUP.sh
+   → Paste your key when asked
+   → Done!
+
+3. Restart backend:
+   → Ctrl+C in uvicorn terminal
+   → Start again
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+I've automated everything possible. You just need to:
+• Log into YOUR OpenAI account (I can't do this)
+• Get YOUR API key (I can't access it)
+• Paste it once (script does the rest)
+
+╔══════════════════════════════════════════════════════════════╗
+║  The script makes it super easy - just get your key!         ║
+╚══════════════════════════════════════════════════════════════╝
