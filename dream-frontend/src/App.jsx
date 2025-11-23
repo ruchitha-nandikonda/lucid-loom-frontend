@@ -4,6 +4,7 @@ import { getToken, setAuthToken } from "./api";
 import LandingPage from "./pages/LandingPage";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
+import VerifyOTP from "./pages/VerifyOTP";
 import DreamList from "./pages/DreamList";
 import NewDream from "./pages/NewDream";
 import DreamDetail from "./pages/DreamDetail";
@@ -67,6 +68,7 @@ function App() {
           {/* Auth pages - no navbar */}
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
+          <Route path="/verify-otp" element={<VerifyOTP />} />
           <Route path="/forgot-password" element={<ForgotPassword />} />
           <Route path="/reset-password" element={<ResetPassword />} />
           {/* Protected routes - with navbar */}

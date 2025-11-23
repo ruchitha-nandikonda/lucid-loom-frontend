@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { registerUser, setAuthToken } from "../api";
+import { registerUser } from "../api";
 import { useNavigate, Link } from "react-router-dom";
 
 export default function Register() {
@@ -18,18 +18,9 @@ export default function Register() {
     try {
       const response = await registerUser(email, password);
       console.log("Registration response:", response);
-
-      // Set auth token and redirect to home
-      if (response.data.access_token) {
-        setAuthToken(response.data.access_token);
-        setSuccess("Registration successful! Redirecting...");
-        setTimeout(() => {
-          window.location.href = "/"; // Force full reload to ensure auth state
-        }, 1000);
-      } else {
-        setError("Registration failed - no token received");
-        setLoading(false);
-      }
+      
+      // Navigate to verify-otp page with email parameter
+      navigate(`/verify-otp?email=${encodeURIComponent(email)}&type=signup`);
     } catch (err) {
       console.error("Registration error:", err);
       setError(err.response?.data?.detail || err.message || "Registration failed");
@@ -61,7 +52,7 @@ export default function Register() {
         {success && <p style={{ color: "#10b981", marginTop: "10px" }}>{success}</p>}
 
         <button type="submit" disabled={loading}>
-          {loading ? "Signing up..." : "Sign up"}
+          {loading ? "Sending verification code..." : "Sign up"}
         </button>
       </form>
       <p>
