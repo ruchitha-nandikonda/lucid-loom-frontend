@@ -42,14 +42,8 @@ function App() {
   return (
     <ErrorBoundary>
       <Router>
-        <Navbar />
-        <div className="container">
-          <Routes>
-          <Route path="/login" element={<Login />} />
-          <Route path="/register" element={<Register />} />
-          <Route path="/forgot-password" element={<ForgotPassword />} />
-          <Route path="/reset-password" element={<ResetPassword />} />
-
+        <Routes>
+          {/* Landing page - no navbar */}
           <Route
             path="/"
             element={
@@ -57,57 +51,91 @@ function App() {
                 const token = getToken();
                 if (token) {
                   return (
-                    <PrivateRoute>
-                      <DreamList />
-                    </PrivateRoute>
+                    <>
+                      <Navbar />
+                      <div className="container">
+                        <DreamList />
+                      </div>
+                    </>
                   );
                 }
                 return <LandingPage />;
               })()
             }
           />
+          
+          {/* Auth pages - no navbar */}
+          <Route path="/login" element={<Login />} />
+          <Route path="/register" element={<Register />} />
+          <Route path="/forgot-password" element={<ForgotPassword />} />
+          <Route path="/reset-password" element={<ResetPassword />} />
+          {/* Protected routes - with navbar */}
           <Route
             path="/new"
             element={
-              <PrivateRoute>
-                <NewDream />
-              </PrivateRoute>
+              <>
+                <Navbar />
+                <div className="container">
+                  <PrivateRoute>
+                    <NewDream />
+                  </PrivateRoute>
+                </div>
+              </>
             }
           />
           <Route
             path="/dreams/:id"
             element={
-              <PrivateRoute>
-                <DreamDetail />
-              </PrivateRoute>
+              <>
+                <Navbar />
+                <div className="container">
+                  <PrivateRoute>
+                    <DreamDetail />
+                  </PrivateRoute>
+                </div>
+              </>
             }
           />
           <Route
             path="/settings"
             element={
-              <PrivateRoute>
-                <Settings />
-              </PrivateRoute>
+              <>
+                <Navbar />
+                <div className="container">
+                  <PrivateRoute>
+                    <Settings />
+                  </PrivateRoute>
+                </div>
+              </>
             }
           />
           <Route
             path="/analytics"
             element={
-              <PrivateRoute>
-                <Analytics />
-              </PrivateRoute>
+              <>
+                <Navbar />
+                <div className="container">
+                  <PrivateRoute>
+                    <Analytics />
+                  </PrivateRoute>
+                </div>
+              </>
             }
           />
           <Route
             path="/patterns"
             element={
-              <PrivateRoute>
-                <PatternAnalysis />
-              </PrivateRoute>
+              <>
+                <Navbar />
+                <div className="container">
+                  <PrivateRoute>
+                    <PatternAnalysis />
+                  </PrivateRoute>
+                </div>
+              </>
             }
           />
           </Routes>
-        </div>
       </Router>
     </ErrorBoundary>
   );
