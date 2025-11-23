@@ -47,42 +47,31 @@ def health():
 
 
 # ---------- Auth routes ----------
-@app.post("/auth/register", response_model=schemas.RegisterResponse)
+@app.post("/auth/register")
 def register(user_in: schemas.UserCreate, db: Session = Depends(get_db)):
-    """Register a new user - sends OTP email for verification"""
+    """Register a new user - direct registration without OTP"""
     existing = auth.get_user_by_email(db, user_in.email)
     if existing:
-        # If user exists but email not verified, allow resending OTP
-        if existing.email_verified is None or existing.email_verified != "True":
-            # Update password and generate new OTP
-            existing.hashed_password = auth.hash_password(user_in.password)
-        else:
-            raise HTTPException(status_code=400, detail="Email already registered")
-    else:
-        # Create new user with unverified email
-        hashed = auth.hash_password(user_in.password)
-        existing = models.User(
-            email=user_in.email,
-            hashed_password=hashed,
-            email_verified="False"
-        )
-        db.add(existing)
+        raise HTTPException(status_code=400, detail="Email already registered")
     
-    # Generate 6-digit OTP
-    otp_code = f"{secrets.randbelow(900000) + 100000:06d}"
-    otp_expires = datetime.utcnow() + timedelta(minutes=10)
-    
-    # Store OTP
-    existing.otp_code = otp_code
-    existing.otp_expires = otp_expires
+    # Create new user with verified email (no OTP required)
+    hashed = auth.hash_password(user_in.password)
+    new_user = models.User(
+        email=user_in.email,
+        hashed_password=hashed,
+        email_verified="True"  # Mark as verified immediately
+    )
+    db.add(new_user)
     db.commit()
+    db.refresh(new_user)
     
-    # Send OTP email
-    email_service.send_otp_email(existing.email, otp_code)
+    # Generate access token
+    access_token = auth.create_access_token(data={"sub": new_user.email})
     
     return {
-        "message": "Verification code sent to your email. Please check your inbox.",
-        "email": existing.email
+        "access_token": access_token,
+        "token_type": "bearer",
+        "message": "Registration successful"
     }
 
 
