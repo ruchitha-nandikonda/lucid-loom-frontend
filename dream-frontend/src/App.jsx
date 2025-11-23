@@ -1,6 +1,7 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { getToken, setAuthToken } from "./api";
+import LandingPage from "./pages/LandingPage";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 import DreamList from "./pages/DreamList";
@@ -52,9 +53,17 @@ function App() {
           <Route
             path="/"
             element={
-              <PrivateRoute>
-                <DreamList />
-              </PrivateRoute>
+              (() => {
+                const token = getToken();
+                if (token) {
+                  return (
+                    <PrivateRoute>
+                      <DreamList />
+                    </PrivateRoute>
+                  );
+                }
+                return <LandingPage />;
+              })()
             }
           />
           <Route
