@@ -22,6 +22,7 @@ app = FastAPI()
 # CORS middleware for frontend
 # Allow all Vercel domains (production and preview deployments)
 # Adding explicit origins for known Vercel domains + regex for others
+# Updated: 2025-11-23 - Force Railway deployment
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
