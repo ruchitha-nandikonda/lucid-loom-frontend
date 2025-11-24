@@ -161,16 +161,12 @@ def login(
             detail="Incorrect email or password",
         )
     
-    # Check if email is verified (handle None for existing users before migration)
+    # OTP verification is only required for signup, not for login
+    # Allow login regardless of email_verified status
+    # (For existing users without email_verified field, mark as verified for consistency)
     if user.email_verified is None:
-        # For existing users without email_verified field, mark as verified
         user.email_verified = "True"
         db.commit()
-    elif user.email_verified != "True":
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Please verify your email address before logging in. Check your inbox for the verification code.",
-        )
 
     token = auth.create_access_token({"sub": user.email})
     return {"access_token": token, "token_type": "bearer"}
