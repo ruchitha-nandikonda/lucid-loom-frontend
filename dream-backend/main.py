@@ -29,8 +29,9 @@ app.add_middleware(
         "http://localhost:5174",
         "http://localhost:3000",
         "https://lucid-loom.vercel.app",
-        "https://lucid-loom-p4gzwv9j0-rns-projects-28c53b11.vercel.app",  # Current preview
-        "https://lucid-loom-5s9xaxmhn-rns-projects-28c53b11.vercel.app",  # Previous preview
+        "https://lucid-loom-2lipirbqw-rns-projects-28c53b11.vercel.app",  # Latest preview
+        "https://lucid-loom-p4gzwv9j0-rns-projects-28c53b11.vercel.app",  # Previous preview
+        "https://lucid-loom-5s9xaxmhn-rns-projects-28c53b11.vercel.app",  # Older preview
     ],
     allow_origin_regex=r"^https://.*\.vercel\.app$",  # Match all other Vercel preview deployments
     allow_credentials=True,
