@@ -13,8 +13,10 @@ export default function VerifyOTP() {
   const navigate = useNavigate();
 
   useEffect(() => {
+    console.log("🔍 VerifyOTP mounted, email:", email, "type:", type);
     if (!email) {
-      navigate("/register");
+      console.log("⚠️ No email in URL, redirecting to register");
+      navigate("/register", { replace: true });
     }
   }, [email, navigate]);
 

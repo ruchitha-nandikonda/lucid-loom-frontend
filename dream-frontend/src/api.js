@@ -65,16 +65,20 @@ api.interceptors.response.use(
       // This prevents clearing token during login/register attempts
       const isAuthPage = window.location.pathname === "/login" || 
                         window.location.pathname === "/register" || 
-                        window.location.pathname === "/verify-otp";
+                        window.location.pathname === "/verify-otp" ||
+                        window.location.pathname === "/forgot-password" ||
+                        window.location.pathname === "/reset-password";
       
       if (!isAuthPage) {
         console.log("⚠️ Clearing token and redirecting to login");
         setAuthToken(null);
+        // Use window.location.href for full page reload to clear any state
         window.location.href = "/login";
       } else {
-        console.log("ℹ️ On auth page, not clearing token");
+        console.log("ℹ️ On auth page, not clearing token or redirecting");
       }
     }
+    // Don't redirect on other errors - let components handle them
     return Promise.reject(error);
   }
 );
