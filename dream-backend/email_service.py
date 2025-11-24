@@ -122,6 +122,7 @@ def _send_via_sendgrid(to_email: str, otp_code: str) -> bool:
 
 def _send_via_smtp(to_email: str, otp_code: str) -> bool:
     """Send email using SMTP (fallback)"""
+    print(f"🔧 Attempting SMTP connection to {SMTP_HOST}:{SMTP_PORT}")
     try:
         # Create message
         msg = MIMEMultipart("alternative")
@@ -167,22 +168,44 @@ def _send_via_smtp(to_email: str, otp_code: str) -> bool:
         
         # Send email - support both STARTTLS (587) and SSL (465)
         # Add timeout to prevent hanging on network issues
+        print(f"🔌 Connecting to SMTP server {SMTP_HOST}:{SMTP_PORT}...")
         if SMTP_PORT == 465:
             # Use SSL for port 465
+            print("🔐 Using SSL connection (port 465)")
             with smtplib.SMTP_SSL(SMTP_HOST, SMTP_PORT, timeout=10) as server:
+                print("🔑 Attempting SMTP login...")
                 server.login(SMTP_USER, SMTP_PASSWORD)
+                print("📤 Sending email message...")
                 server.send_message(msg)
+                print("✅ Email sent successfully!")
         else:
             # Use STARTTLS for port 587 (default)
+            print("🔐 Using STARTTLS connection (port 587)")
             with smtplib.SMTP(SMTP_HOST, SMTP_PORT, timeout=10) as server:
+                print("🔒 Starting TLS...")
                 server.starttls()
+                print("🔑 Attempting SMTP login...")
                 server.login(SMTP_USER, SMTP_PASSWORD)
+                print("📤 Sending email message...")
                 server.send_message(msg)
+                print("✅ Email sent successfully!")
         
         print(f"✅ OTP email sent to {to_email} via SMTP")
         return True
         
+    except smtplib.SMTPException as e:
+        print(f"❌ SMTP error sending email to {to_email}: {e}")
+        import traceback
+        print(f"📋 Traceback: {traceback.format_exc()}")
+        return False
+    except OSError as e:
+        print(f"❌ Network error sending email to {to_email}: {e}")
+        import traceback
+        print(f"📋 Traceback: {traceback.format_exc()}")
+        return False
     except Exception as e:
-        print(f"❌ Failed to send OTP email via SMTP to {to_email}: {e}")
+        print(f"❌ Unexpected error sending email to {to_email}: {e}")
+        import traceback
+        print(f"📋 Traceback: {traceback.format_exc()}")
         return False
 
