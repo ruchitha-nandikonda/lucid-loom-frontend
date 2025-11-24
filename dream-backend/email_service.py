@@ -28,8 +28,15 @@ def send_otp_email(to_email: str, otp_code: str) -> bool:
     Uses SendGrid API if available, otherwise falls back to SMTP.
     Returns True if successful, False otherwise.
     """
+    print(f"🚀 send_otp_email() called for {to_email} with OTP {otp_code}")
+    print(f"🔍 Checking email configuration...")
+    print(f"   SENDGRID_API_KEY: {'Set' if SENDGRID_API_KEY else 'Not set'}")
+    print(f"   SMTP_USER: {'Set' if SMTP_USER else 'Not set'}")
+    print(f"   SMTP_PASSWORD: {'Set' if SMTP_PASSWORD else 'Not set'}")
+    
     # Try SendGrid first (works better on Railway)
     if SENDGRID_API_KEY:
+        print("📬 Using SendGrid API")
         return _send_via_sendgrid(to_email, otp_code)
     
     # Fallback to SMTP
@@ -38,6 +45,7 @@ def send_otp_email(to_email: str, otp_code: str) -> bool:
         print(f"   Would send OTP {otp_code} to {to_email}")
         return False
     
+    print("📧 Using SMTP fallback")
     return _send_via_smtp(to_email, otp_code)
 
 
