@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useSearchParams, useNavigate, Link } from "react-router-dom";
-import { verifyOTP, registerUser, setAuthToken } from "../api";
+import { verifyOTP, registerUser, setAuthToken, getToken } from "../api";
 
 export default function VerifyOTP() {
   const [searchParams] = useSearchParams();
@@ -29,10 +29,22 @@ export default function VerifyOTP() {
 
       // Set auth token and redirect to home
       if (response.data.access_token) {
-        setAuthToken(response.data.access_token);
+        console.log("✅ OTP verification successful, storing token...");
+        setAuthToken(response.data.access_token, true); // Always remember (store in localStorage)
+        
+        // Verify token was stored
+        const storedToken = getToken();
+        console.log("🔍 Token stored after OTP:", storedToken ? "Yes" : "No");
+        
+        if (!storedToken) {
+          setError("Failed to store authentication token. Please try logging in manually.");
+          setLoading(false);
+          return;
+        }
+        
         setSuccess("Email verified successfully! Redirecting...");
         setTimeout(() => {
-          window.location.href = "/"; // Force full reload to ensure auth state
+          navigate("/"); // Use navigate instead of window.location for better React Router handling
         }, 1000);
       } else {
         setError("Verification failed - no token received");

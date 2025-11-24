@@ -12,10 +12,17 @@ export default function DreamList() {
   useEffect(() => {
     async function load() {
       try {
+        console.log("📋 Loading dreams...");
         const res = await fetchDreams();
-        setDreams(res.data);
+        console.log("✅ Dreams loaded:", res.data?.length || 0, "dreams");
+        setDreams(res.data || []);
       } catch (e) {
-        console.error(e);
+        console.error("❌ Error loading dreams:", e);
+        console.error("❌ Error details:", e.response?.data);
+        if (e.response?.status === 401) {
+          console.error("⚠️ 401 Unauthorized - token may be invalid or expired");
+        }
+        setDreams([]); // Set empty array on error
       } finally {
         setLoading(false);
       }

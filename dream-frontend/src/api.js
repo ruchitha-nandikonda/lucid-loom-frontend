@@ -2,6 +2,13 @@ import axios from "axios";
 
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:8000";
 
+// Debug logging to help diagnose API URL issues
+console.log("🔍 API Configuration:", {
+  VITE_API_URL: import.meta.env.VITE_API_URL,
+  API_URL: API_URL,
+  isProduction: import.meta.env.PROD,
+});
+
 const api = axios.create({
   baseURL: API_URL,
   timeout: 30000, // 30 second timeout
@@ -50,10 +57,22 @@ api.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response?.status === 401) {
-      // Clear token and redirect to login
-      setAuthToken(null);
-      if (window.location.pathname !== "/login" && window.location.pathname !== "/register") {
+      console.log("⚠️ 401 Unauthorized - checking token...");
+      const currentToken = getToken();
+      console.log("🔍 Current token:", currentToken ? "Exists" : "Missing");
+      
+      // Only clear token and redirect if we're not on auth pages
+      // This prevents clearing token during login/register attempts
+      const isAuthPage = window.location.pathname === "/login" || 
+                        window.location.pathname === "/register" || 
+                        window.location.pathname === "/verify-otp";
+      
+      if (!isAuthPage) {
+        console.log("⚠️ Clearing token and redirecting to login");
+        setAuthToken(null);
         window.location.href = "/login";
+      } else {
+        console.log("ℹ️ On auth page, not clearing token");
       }
     }
     return Promise.reject(error);

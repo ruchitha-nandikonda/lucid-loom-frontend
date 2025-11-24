@@ -21,9 +21,16 @@ export default function NewDream() {
     try {
       const res = await createDream(title, rawText, generateImage);
       const created = res.data;
+      console.log("✅ Dream created:", created.id);
       setResult(created); // initially without interpretation
+      
       // open websocket to listen for completion
-      const wsUrl = `ws://${window.location.hostname}:8000/ws/dream-status/${created.id}`;
+      // Use the API URL to construct WebSocket URL
+      const apiUrl = import.meta.env.VITE_API_URL || "http://localhost:8000";
+      const wsProtocol = apiUrl.startsWith("https") ? "wss:" : "ws:";
+      const wsHost = apiUrl.replace(/^https?:\/\//, "").replace(/\/$/, "");
+      const wsUrl = `${wsProtocol}//${wsHost}/ws/dream-status/${created.id}`;
+      console.log("🔌 Connecting to WebSocket:", wsUrl);
       wsRef.current = new WebSocket(wsUrl);
       
       // Fallback: poll for completion if WebSocket fails

@@ -253,7 +253,7 @@ async def _process_dream(dream_id: int, db: Session, generate_image: bool = True
             except Exception:
                 pass
             
-            image_url = await ai.generate_dream_image(analysis["image_prompt"], use_free=False)
+            image_url = await ai.generate_dream_image(analysis["image_prompt"], dream_text=dream.raw_text, use_free=False)
         
         # Convert symbols dict to string if needed
         symbols = analysis.get("symbols")
@@ -283,7 +283,12 @@ async def _process_dream(dream_id: int, db: Session, generate_image: bool = True
         error_msg = str(e)
         print(f"❌ ValueError for dream {dream_id}: {error_msg}")
         if "API key" in error_msg:
-            error_msg = "OpenAI API key not configured. Please set OPENAI_API_KEY in .env file."
+            if "GROQ_API_KEY" in error_msg:
+                error_msg = "Groq API key not configured. Please set GROQ_API_KEY in .env file."
+            elif "OPENAI_API_KEY" in error_msg:
+                error_msg = "OpenAI API key not configured. Please set OPENAI_API_KEY in .env file (required for image generation)."
+            else:
+                error_msg = "API key not configured. Please set GROQ_API_KEY (for text) and/or OPENAI_API_KEY (for images) in .env file."
         interp = models.DreamInterpretation(
             poetic_narrative=None,
             meaning=f"⚠️ Configuration Error: {error_msg}",
@@ -299,7 +304,12 @@ async def _process_dream(dream_id: int, db: Session, generate_image: bool = True
         import traceback
         traceback.print_exc()
         if "API" in error_msg or "key" in error_msg.lower():
-            error_msg = f"OpenAI API Error: {error_msg}. Please check your API key configuration."
+            if "Groq" in error_msg or "GROQ" in error_msg:
+                error_msg = f"Groq API Error: {error_msg}. Please check your GROQ_API_KEY configuration."
+            elif "OpenAI" in error_msg or "OPENAI" in error_msg:
+                error_msg = f"OpenAI API Error: {error_msg}. Please check your OPENAI_API_KEY configuration (required for image generation)."
+            else:
+                error_msg = f"API Error: {error_msg}. Please check your API key configuration (GROQ_API_KEY for text, OPENAI_API_KEY for images)."
         interp = models.DreamInterpretation(
             poetic_narrative=None,
             meaning=f"⚠️ AI interpretation unavailable: {error_msg}",

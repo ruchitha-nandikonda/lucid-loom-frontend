@@ -4,79 +4,86 @@ import base64
 from dotenv import load_dotenv
 
 load_dotenv()
-OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
+
+# API configuration
+GROQ_API_KEY = os.getenv("GROQ_API_KEY", "")
+OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "")  # For image generation only
 HUGGINGFACE_API_KEY = os.getenv("HUGGINGFACE_API_KEY", "")  # Optional, free tier works without key
 
-BASE_URL = "https://api.openai.com/v1/chat/completions"
-IMAGE_URL = "https://api.openai.com/v1/images/generations"
+# API endpoints
+GROQ_URL = "https://api.groq.com/openai/v1/chat/completions"
+GROQ_MODEL = "llama-3.1-8b-instant"  # Fast and free Groq model
+OPENAI_IMAGE_URL = "https://api.openai.com/v1/images/generations"
 # Free Stable Diffusion via Hugging Face
 HUGGINGFACE_IMAGE_URL = "https://api-inference.huggingface.co/models/stabilityai/stable-diffusion-xl-base-1.0"
 
 
 async def analyze_dream(raw_text: str):
     """
+    Call Groq to interpret dream.
     Returns poetic_narrative, meaning, symbols, emotions, image_prompt
     """
-    if not OPENAI_API_KEY or OPENAI_API_KEY == "your_openai_api_key_here":
-        raise ValueError("OpenAI API key not configured. Please set OPENAI_API_KEY in .env file.")
-    
+    if not GROQ_API_KEY or GROQ_API_KEY == "your_groq_api_key_here":
+        raise ValueError("GROQ_API_KEY not configured. Please set GROQ_API_KEY in .env file.")
+
     system_prompt = """
-You are a friendly dream interpreter.
-Given a user's dream, you will:
-
-1) Rewrite it as a short poetic narrative (3-6 sentences).
-2) Explain its possible meaning in simple language (5-8 sentences).
-3) List main symbols and what they might represent.
-4) Describe the emotional tone with 3-5 emotion words.
-
-Return JSON with keys:
-poetic_narrative, meaning, symbols, emotions, image_prompt.
-
-The image_prompt should describe a realistic, photorealistic scene based on the dream. 
-Use natural lighting, real-world settings, and lifelike details. Make it look like a real photograph, not a painting or illustration.
+You are a friendly, poetic dream interpreter.
+Given a dream description, respond in JSON with keys:
+- poetic_narrative: a short, beautiful retelling (3-6 sentences)
+- meaning: simple explanation of what this dream might mean (5-8 sentences)
+- symbols: a comma-separated list of key symbols and what they might represent
+- emotions: 3-6 emotion words (e.g. fear, curiosity, hope)
+- image_prompt: a detailed description focusing on the main visual elements, symbols, and atmosphere of the dream. Describe the key objects, settings, lighting, colors, and mood. This will be used to create a surreal, dream-like artistic image, so focus on the most evocative and symbolic elements (2-4 sentences).
+Reply ONLY with JSON.
 """
 
+    headers = {
+        "Authorization": f"Bearer {GROQ_API_KEY}",
+        "Content-Type": "application/json",
+    }
+
+    payload = {
+        "model": GROQ_MODEL,
+        "messages": [
+            {"role": "system", "content": system_prompt},
+            {"role": "user", "content": raw_text},
+        ],
+        "temperature": 0.8,
+        "response_format": {"type": "json_object"},
+    }
+
     async with httpx.AsyncClient() as client:
-        resp = await client.post(
-            BASE_URL,
-            headers={"Authorization": f"Bearer {OPENAI_API_KEY}"},
-            json={
-                "model": "gpt-4o-mini",
-                "messages": [
-                    {"role": "system", "content": system_prompt},
-                    {"role": "user", "content": raw_text},
-                ],
-                "response_format": {"type": "json_object"},
-            },
-            timeout=30,  # Reduced timeout for faster failure detection
-        )
+        resp = await client.post(GROQ_URL, headers=headers, json=payload, timeout=60)
         
         if resp.status_code != 200:
             error_data = resp.json() if resp.content else {}
-            raise Exception(f"OpenAI API error: {error_data.get('error', {}).get('message', 'Unknown error')}")
+            raise Exception(f"Groq API error: {error_data.get('error', {}).get('message', 'Unknown error')}")
 
     data = resp.json()
     content = data["choices"][0]["message"]["content"]
+    
     import json
     result = json.loads(content)
-    return result
+    return {
+        "poetic_narrative": result.get("poetic_narrative", ""),
+        "meaning": result.get("meaning", ""),
+        "symbols": result.get("symbols", ""),
+        "emotions": result.get("emotions", ""),
+        "image_prompt": result.get("image_prompt", ""),
+    }
 
 
-async def generate_dream_image(image_prompt: str, use_free: bool = False):
+async def generate_dream_image(image_prompt: str, dream_text: str = "", use_free: bool = False):
     """
     Generate dream image using either:
-    - Free: Hugging Face Stable Diffusion (free tier)
+    - Free: Hugging Face Stable Diffusion (free tier) - currently disabled
     - Paid: OpenAI DALL-E 3 ($0.04 per image)
+    Creates surreal, dream-like scenes with cinematic, poetic atmosphere.
     """
-    # Enhance prompt to ensure realistic, photorealistic style
-    enhanced_prompt = f"Photorealistic, realistic photograph: {image_prompt}. High quality, natural lighting, lifelike details, real-world setting, professional photography style."
-    
     if use_free:
-        # Use free Hugging Face Stable Diffusion
-        return await _generate_image_free(enhanced_prompt)
+        return await _generate_image_free(image_prompt)
     else:
-        # Use paid OpenAI DALL-E 3
-        return await _generate_image_paid(enhanced_prompt)
+        return await _generate_image_paid(image_prompt, dream_text)
 
 
 async def _generate_image_free(image_prompt: str):
@@ -93,21 +100,56 @@ async def _generate_image_free(image_prompt: str):
     )
 
 
-async def _generate_image_paid(image_prompt: str):
+async def _generate_image_paid(image_prompt: str, dream_text: str = ""):
     """Generate image using paid OpenAI DALL-E 3"""
     if not OPENAI_API_KEY or OPENAI_API_KEY == "your_openai_api_key_here":
-        raise ValueError("OpenAI API key not configured. Please set OPENAI_API_KEY in .env file.")
+        raise ValueError("OPENAI_API_KEY not configured. Please set OPENAI_API_KEY in .env file.")
+    
+    # Base artistic direction for dream-like images
+    artistic_direction = (
+        "Create a surreal, dream-like scene. Focus on the main symbols and emotions. "
+        "Use soft, cinematic lighting, gentle fog, and a slightly magical atmosphere. "
+        "Make the scene feel poetic, calm, and otherworldly — not scary unless the dream naturally suggests darkness. "
+        "Avoid showing real people clearly; use silhouettes or symbolic figures instead. "
+        "Keep the image cohesive, visually clean, and emotionally expressive."
+    )
+    
+    # Combine AI prompt with key details from original dream for better accuracy
+    if dream_text:
+        # Extract key visual elements from dream text (first 300 chars for context)
+        dream_snippet = dream_text[:300].strip()
+        # Create a more detailed prompt that includes specific dream details
+        enhanced_prompt = (
+            f"{artistic_direction} "
+            f"Scene description: {image_prompt}. "
+            f"Include specific dream details: {dream_snippet}. "
+            f"High quality, cinematic composition, dreamy atmosphere, surreal aesthetic."
+        )
+    else:
+        enhanced_prompt = (
+            f"{artistic_direction} "
+            f"Scene description: {image_prompt}. "
+            f"High quality, cinematic composition, dreamy atmosphere, surreal aesthetic."
+        )
+    
+    # Limit prompt length (DALL-E 3 has a 4000 character limit, but we'll keep it concise)
+    if len(enhanced_prompt) > 1000:
+        enhanced_prompt = enhanced_prompt[:1000] + "..."
     
     async with httpx.AsyncClient() as client:
         resp = await client.post(
-            IMAGE_URL,
-            headers={"Authorization": f"Bearer {OPENAI_API_KEY}"},
+            OPENAI_IMAGE_URL,
+            headers={
+                "Authorization": f"Bearer {OPENAI_API_KEY}",
+                "Content-Type": "application/json",
+            },
             json={
                 "model": "dall-e-3",
-                "prompt": image_prompt,
+                "prompt": enhanced_prompt,
                 "size": "1024x1024",
+                "quality": "standard",
             },
-            timeout=45,
+            timeout=90,
         )
         
         if resp.status_code != 200:
@@ -123,46 +165,53 @@ async def _generate_image_paid(image_prompt: str):
 async def rewrite_dream(raw_text: str, style: str):
     """
     Rewrite a dream in a specific narrative style.
+    Uses Groq for free text generation.
     Returns the rewritten narrative.
     """
-    if not OPENAI_API_KEY or OPENAI_API_KEY == "your_openai_api_key_here":
-        raise ValueError("OpenAI API key not configured. Please set OPENAI_API_KEY in .env file.")
+    if not GROQ_API_KEY or GROQ_API_KEY == "your_groq_api_key_here":
+        raise ValueError("GROQ_API_KEY not configured. Please set GROQ_API_KEY in .env file.")
     
     style_prompts = {
-        "horror": "Rewrite this dream as a chilling horror story. Use dark, atmospheric language. Create suspense and unease. Keep it 4-8 sentences.",
-        "sci-fi": "Rewrite this dream as a science fiction narrative. Add futuristic elements, technology, or space themes. Make it feel like a sci-fi story. Keep it 4-8 sentences.",
+        "horror": "Rewrite this dream as a horror scene. Make it dark, eerie, and suspenseful. Keep the core symbols and emotions but transform them into a terrifying narrative.",
+        "sci-fi": "Rewrite this dream as a science fiction story. Add futuristic elements, technology, space, or alternate dimensions. Keep the core symbols but give them a sci-fi twist.",
         "children": "Rewrite this dream as a gentle children's story. Use simple, warm language. Make it magical and age-appropriate. Keep it 4-8 sentences.",
         "fantasy": "Rewrite this dream as a fantasy tale. Add magical elements, mythical creatures, or enchanted settings. Make it feel like a fantasy adventure. Keep it 4-8 sentences.",
+        "fairy-tale": "Rewrite this dream as a fairy tale. Use magical elements, enchanted settings, and fairy tale language. Make it whimsical and enchanting.",
+        "myth": "Rewrite this dream as a mythological story. Use gods, heroes, ancient settings, and epic language. Make it feel like an ancient legend.",
+        "bedtime-story": "Rewrite this dream as a calming bedtime story. Make it gentle, peaceful, and soothing. Use soft language and comforting imagery.",
         "noir": "Rewrite this dream as a film noir story. Use hard-boiled detective style, shadows, mystery, and urban atmosphere. Keep it 4-8 sentences.",
         "poetic": "Rewrite this dream as a beautiful poem in prose form. Use lyrical, flowing language with metaphors and imagery. Keep it 4-8 sentences.",
     }
     
-    style_prompt = style_prompts.get(style.lower(), style_prompts["poetic"])
+    style_prompt = style_prompts.get(style.lower(), style_prompts.get("fairy-tale", style_prompts["poetic"]))
     
     system_prompt = f"""
 You are a creative writer specializing in {style} narratives.
 {style_prompt}
-
-Return only the rewritten narrative text, no JSON, no explanations, just the story.
+Return ONLY the rewritten dream narrative, no explanations or meta-commentary.
+Make it 3-5 sentences, vivid and engaging.
 """
 
+    headers = {
+        "Authorization": f"Bearer {GROQ_API_KEY}",
+        "Content-Type": "application/json",
+    }
+
+    payload = {
+        "model": GROQ_MODEL,
+        "messages": [
+            {"role": "system", "content": system_prompt},
+            {"role": "user", "content": raw_text},
+        ],
+        "temperature": 0.9,
+    }
+
     async with httpx.AsyncClient() as client:
-        resp = await client.post(
-            BASE_URL,
-            headers={"Authorization": f"Bearer {OPENAI_API_KEY}"},
-            json={
-                "model": "gpt-4o-mini",
-                "messages": [
-                    {"role": "system", "content": system_prompt},
-                    {"role": "user", "content": raw_text},
-                ],
-            },
-            timeout=60,
-        )
+        resp = await client.post(GROQ_URL, headers=headers, json=payload, timeout=60)
         
         if resp.status_code != 200:
             error_data = resp.json() if resp.content else {}
-            raise Exception(f"OpenAI API error: {error_data.get('error', {}).get('message', 'Unknown error')}")
+            raise Exception(f"Groq API error: {error_data.get('error', {}).get('message', 'Unknown error')}")
 
     data = resp.json()
     content = data["choices"][0]["message"]["content"]
@@ -172,10 +221,11 @@ Return only the rewritten narrative text, no JSON, no explanations, just the sto
 async def explain_symbol(symbol: str):
     """
     Provide a detailed explanation of what a dream symbol might mean.
+    Uses Groq for free text generation.
     Returns a comprehensive explanation with cultural, psychological, and personal context.
     """
-    if not OPENAI_API_KEY or OPENAI_API_KEY == "your_openai_api_key_here":
-        raise ValueError("OpenAI API key not configured. Please set OPENAI_API_KEY in .env file.")
+    if not GROQ_API_KEY or GROQ_API_KEY == "your_groq_api_key_here":
+        raise ValueError("GROQ_API_KEY not configured. Please set GROQ_API_KEY in .env file.")
     
     system_prompt = """
 You are a dream interpretation expert with knowledge of psychology, mythology, and cultural symbolism.
@@ -192,24 +242,26 @@ general_meaning, psychological, cultural, personal_context.
 Be insightful, educational, and respectful of different interpretations.
 """
 
+    headers = {
+        "Authorization": f"Bearer {GROQ_API_KEY}",
+        "Content-Type": "application/json",
+    }
+
+    payload = {
+        "model": GROQ_MODEL,
+        "messages": [
+            {"role": "system", "content": system_prompt},
+            {"role": "user", "content": f"Explain the dream symbol: {symbol}"},
+        ],
+        "response_format": {"type": "json_object"},
+    }
+
     async with httpx.AsyncClient() as client:
-        resp = await client.post(
-            BASE_URL,
-            headers={"Authorization": f"Bearer {OPENAI_API_KEY}"},
-            json={
-                "model": "gpt-4o-mini",
-                "messages": [
-                    {"role": "system", "content": system_prompt},
-                    {"role": "user", "content": f"Explain the dream symbol: {symbol}"},
-                ],
-                "response_format": {"type": "json_object"},
-            },
-            timeout=60,
-        )
+        resp = await client.post(GROQ_URL, headers=headers, json=payload, timeout=60)
         
         if resp.status_code != 200:
             error_data = resp.json() if resp.content else {}
-            raise Exception(f"OpenAI API error: {error_data.get('error', {}).get('message', 'Unknown error')}")
+            raise Exception(f"Groq API error: {error_data.get('error', {}).get('message', 'Unknown error')}")
 
     data = resp.json()
     content = data["choices"][0]["message"]["content"]
@@ -221,64 +273,68 @@ Be insightful, educational, and respectful of different interpretations.
 async def analyze_dream_patterns(dreams_data: list):
     """
     Analyze patterns across multiple dreams.
+    Uses Groq for free text generation.
     dreams_data should be a list of dicts with: title, raw_text, symbols, emotions, created_at
     Returns comprehensive pattern analysis.
     """
-    if not OPENAI_API_KEY or OPENAI_API_KEY == "your_openai_api_key_here":
-        raise ValueError("OpenAI API key not configured. Please set OPENAI_API_KEY in .env file.")
+    if not GROQ_API_KEY or GROQ_API_KEY == "your_groq_api_key_here":
+        raise ValueError("GROQ_API_KEY not configured. Please set GROQ_API_KEY in .env file.")
     
-    # Prepare summary of dreams for analysis
-    dreams_summary = []
-    for dream in dreams_data:
+    # Prepare dream summaries for analysis
+    dream_summaries = []
+    for dream in dreams_data[:10]:  # Last 10 dreams
         summary = f"Dream: {dream.get('title', 'Untitled')}\n"
-        summary += f"Text: {dream.get('raw_text', '')[:200]}...\n"
-        if dream.get('symbols'):
-            summary += f"Symbols: {dream.get('symbols')}\n"
-        if dream.get('emotions'):
-            summary += f"Emotions: {dream.get('emotions')}\n"
-        dreams_summary.append(summary)
+        summary += f"Text: {dream.get('raw_text', '')[:200]}\n"
+        if dream.get('interpretation'):
+            summary += f"Symbols: {dream.get('interpretation', {}).get('symbols', '')}\n"
+            summary += f"Emotions: {dream.get('interpretation', {}).get('emotions', '')}\n"
+        elif dream.get('symbols'):
+            summary += f"Symbols: {dream.get('symbols', '')}\n"
+        elif dream.get('emotions'):
+            summary += f"Emotions: {dream.get('emotions', '')}\n"
+        dream_summaries.append(summary)
     
-    combined_text = "\n\n---\n\n".join(dreams_summary)
+    combined_dreams = "\n\n---\n\n".join(dream_summaries)
     
     system_prompt = """
-You are a dream analysis expert specializing in pattern recognition across multiple dreams.
-Analyze the provided collection of dreams and identify:
+You are a dream pattern analyst.
+Analyze the provided dreams and identify:
+1. Recurring symbols (which appear in multiple dreams)
+2. Recurring emotions
+3. Emotional trends (are they becoming more positive, negative, or chaotic?)
+4. Main themes or patterns
 
-1. Recurring themes or motifs
-2. Emotional patterns and trends
-3. Common symbols and their frequency
-4. Temporal patterns (how dreams change over time)
-5. Personal insights and growth patterns
-6. Recommendations for further exploration
-
-Return JSON with keys:
-recurring_themes, emotional_patterns, symbol_patterns, temporal_insights, personal_growth, recommendations.
-
-Be insightful, supportive, and focus on patterns that could help the dreamer understand themselves better.
+Respond in JSON format with keys:
+- recurring_symbols: list of symbols that appear multiple times
+- recurring_emotions: list of emotions that repeat
+- emotional_trend: "positive", "negative", "chaotic", or "mixed"
+- main_themes: 2-3 main themes you notice
+- pattern_summary: a 2-3 sentence summary of the patterns you found
 """
 
+    headers = {
+        "Authorization": f"Bearer {GROQ_API_KEY}",
+        "Content-Type": "application/json",
+    }
+
+    payload = {
+        "model": GROQ_MODEL,
+        "messages": [
+            {"role": "system", "content": system_prompt},
+            {"role": "user", "content": combined_dreams},
+        ],
+        "temperature": 0.7,
+        "response_format": {"type": "json_object"},
+    }
+
     async with httpx.AsyncClient() as client:
-        resp = await client.post(
-            BASE_URL,
-            headers={"Authorization": f"Bearer {OPENAI_API_KEY}"},
-            json={
-                "model": "gpt-4o-mini",
-                "messages": [
-                    {"role": "system", "content": system_prompt},
-                    {"role": "user", "content": f"Analyze these {len(dreams_data)} dreams for patterns:\n\n{combined_text}"},
-                ],
-                "response_format": {"type": "json_object"},
-            },
-            timeout=90,
-        )
+        resp = await client.post(GROQ_URL, headers=headers, json=payload, timeout=60)
         
         if resp.status_code != 200:
             error_data = resp.json() if resp.content else {}
-            raise Exception(f"OpenAI API error: {error_data.get('error', {}).get('message', 'Unknown error')}")
+            raise Exception(f"Groq API error: {error_data.get('error', {}).get('message', 'Unknown error')}")
 
     data = resp.json()
     content = data["choices"][0]["message"]["content"]
     import json
-    result = json.loads(content)
-    return result
-
+    return json.loads(content)
