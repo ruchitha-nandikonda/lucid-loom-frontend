@@ -21,15 +21,18 @@ app = FastAPI()
 
 # CORS middleware for frontend
 # Allow all Vercel domains (production and preview deployments)
-# Using explicit regex pattern - Starlette uses re.match() which requires ^ anchor
+# Adding explicit origins for known Vercel domains + regex for others
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
         "http://localhost:5173",
         "http://localhost:5174",
         "http://localhost:3000",
+        "https://lucid-loom.vercel.app",
+        "https://lucid-loom-p4gzwv9j0-rns-projects-28c53b11.vercel.app",  # Current preview
+        "https://lucid-loom-5s9xaxmhn-rns-projects-28c53b11.vercel.app",  # Previous preview
     ],
-    allow_origin_regex=r"^https://.*\.vercel\.app$",  # Starlette uses re.match() - needs ^ anchor
+    allow_origin_regex=r"^https://.*\.vercel\.app$",  # Match all other Vercel preview deployments
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
