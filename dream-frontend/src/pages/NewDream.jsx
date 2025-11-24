@@ -27,11 +27,41 @@ export default function NewDream() {
       // open websocket to listen for completion
       // Use the API URL to construct WebSocket URL
       const apiUrl = import.meta.env.VITE_API_URL || "http://localhost:8000";
-      const wsProtocol = apiUrl.startsWith("https") ? "wss:" : "ws:";
-      const wsHost = apiUrl.replace(/^https?:\/\//, "").replace(/\/$/, "");
+      
+      // Determine WebSocket protocol
+      // CRITICAL: If page is HTTPS (Vercel), MUST use wss:// (secure WebSocket)
+      // Otherwise browsers will block the connection (Mixed Content error)
+      const isPageHttps = window.location.protocol === "https:";
+      const isApiHttps = apiUrl.startsWith("https");
+      
+      // Always use wss:// if page is HTTPS (required for Vercel)
+      // Use wss:// if API is HTTPS, ws:// if API is HTTP and page is HTTP
+      const wsProtocol = (isPageHttps || isApiHttps) ? "wss:" : "ws:";
+      
+      // Extract host from API URL (remove http:// or https:// and trailing slash)
+      let wsHost = apiUrl.replace(/^https?:\/\//, "").replace(/\/$/, "");
+      
+      // Remove port if it's the default HTTP/HTTPS port (80/443)
+      // But keep custom ports like :8000 for localhost
+      if (wsHost.includes("localhost") || wsHost.includes("127.0.0.1")) {
+        // Keep port for localhost
+      } else {
+        // Remove default ports for production
+        wsHost = wsHost.replace(/:80$/, "").replace(/:443$/, "");
+      }
+      
       const wsUrl = `${wsProtocol}//${wsHost}/ws/dream-status/${created.id}`;
       console.log("🔌 Connecting to WebSocket:", wsUrl);
-      wsRef.current = new WebSocket(wsUrl);
+      console.log("🔍 API URL:", apiUrl);
+      console.log("🔍 Page protocol:", window.location.protocol);
+      console.log("🔍 Using protocol:", wsProtocol);
+      
+      try {
+        wsRef.current = new WebSocket(wsUrl);
+      } catch (error) {
+        console.error("❌ WebSocket connection error:", error);
+        // Continue with polling fallback
+      }
       
       // Fallback: poll for completion if WebSocket fails
       let pollCount = 0;
