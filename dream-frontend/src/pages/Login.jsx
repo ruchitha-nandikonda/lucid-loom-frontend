@@ -19,26 +19,54 @@ export default function Login() {
     setError("");
     try {
       const normalizedEmail = email.trim().toLowerCase();
+      console.log("📝 Starting login for:", normalizedEmail);
+      
       const res = await loginUser(normalizedEmail, password);
       console.log("✅ Login successful, token received:", res.data.access_token ? "Yes" : "No");
       
+      if (!res.data.access_token) {
+        setError("Login failed - no token received from server");
+        console.error("❌ No access token in response:", res.data);
+        return;
+      }
+      
       // Store token
       setAuthToken(res.data.access_token, remember);
+      console.log("💾 Token stored with remember:", remember);
       
       // Verify token was stored
       const storedToken = getToken();
-      console.log("🔍 Token stored:", storedToken ? "Yes" : "No");
+      console.log("🔍 Token stored verification:", storedToken ? "Yes" : "No");
       console.log("🔍 Token value:", storedToken ? storedToken.substring(0, 20) + "..." : "None");
       
-      if (remember) setRememberedEmail(normalizedEmail);
-      else clearRememberedEmail();
+      if (!storedToken) {
+        setError("Failed to store authentication token. Please try again.");
+        console.error("❌ Token storage failed!");
+        return;
+      }
       
+      if (remember) {
+        setRememberedEmail(normalizedEmail);
+        console.log("💾 Email remembered");
+      } else {
+        clearRememberedEmail();
+      }
+      
+      console.log("✅ Login complete, navigating to home...");
+      
+      // Use replace: true to prevent back button issues
       // Small delay to ensure token is stored before navigation
       setTimeout(() => {
-        navigate("/");
-      }, 100);
+        console.log("🔗 Navigating to /");
+        navigate("/", { replace: true });
+      }, 200);
     } catch (err) {
       console.error("❌ Login error:", err);
+      console.error("❌ Error details:", {
+        status: err.response?.status,
+        data: err.response?.data,
+        message: err.message
+      });
       const apiMsg = err?.response?.data?.detail;
       setError(apiMsg || "Invalid email or password");
     }

@@ -33,8 +33,11 @@ function App() {
       setAuthToken(token);
       // Verify token is set in axios
       console.log("✅ Token initialized in axios");
+      console.log("🔍 Token value:", token.substring(0, 20) + "...");
     } else {
       console.log("⚠️ No token found in storage");
+      // Clear any stale axios headers
+      setAuthToken(null);
     }
     setInitialized(true);
   }, []);
