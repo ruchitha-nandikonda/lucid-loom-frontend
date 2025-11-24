@@ -28,12 +28,13 @@ function App() {
 
   useEffect(() => {
     const token = getToken();
+    console.log("🔍 App initialization - Token check:", token ? "Found" : "Not found");
     if (token) {
       setAuthToken(token);
       // Verify token is set in axios
-      console.log("Token initialized:", token ? "Yes" : "No");
+      console.log("✅ Token initialized in axios");
     } else {
-      console.log("No token found in storage");
+      console.log("⚠️ No token found in storage");
     }
     setInitialized(true);
   }, []);
@@ -50,7 +51,9 @@ function App() {
             element={
               (() => {
                 const token = getToken();
+                console.log("🔍 Route '/' - Token check:", token ? "Found" : "Not found");
                 if (token) {
+                  console.log("✅ Showing DreamList (logged in)");
                   return (
                     <>
                       <Navbar />
@@ -60,6 +63,7 @@ function App() {
                     </>
                   );
                 }
+                console.log("✅ Showing LandingPage (not logged in)");
                 return <LandingPage />;
               })()
             }

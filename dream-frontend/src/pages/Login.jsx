@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { loginUser, setAuthToken, getRememberedEmail, setRememberedEmail, clearRememberedEmail } from "../api";
+import { loginUser, setAuthToken, getToken, getRememberedEmail, setRememberedEmail, clearRememberedEmail } from "../api";
 import { useNavigate, Link } from "react-router-dom";
 
 export default function Login() {
@@ -20,11 +20,25 @@ export default function Login() {
     try {
       const normalizedEmail = email.trim().toLowerCase();
       const res = await loginUser(normalizedEmail, password);
+      console.log("✅ Login successful, token received:", res.data.access_token ? "Yes" : "No");
+      
+      // Store token
       setAuthToken(res.data.access_token, remember);
+      
+      // Verify token was stored
+      const storedToken = getToken();
+      console.log("🔍 Token stored:", storedToken ? "Yes" : "No");
+      console.log("🔍 Token value:", storedToken ? storedToken.substring(0, 20) + "..." : "None");
+      
       if (remember) setRememberedEmail(normalizedEmail);
       else clearRememberedEmail();
-      navigate("/");
+      
+      // Small delay to ensure token is stored before navigation
+      setTimeout(() => {
+        navigate("/");
+      }, 100);
     } catch (err) {
+      console.error("❌ Login error:", err);
       const apiMsg = err?.response?.data?.detail;
       setError(apiMsg || "Invalid email or password");
     }
