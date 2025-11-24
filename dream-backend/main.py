@@ -87,8 +87,13 @@ def register(
     existing.otp_expires = otp_expires
     db.commit()
     
+    # Log before sending email
+    print(f"📧 Preparing to send OTP {otp_code} to {existing.email}")
+    
     # Send OTP email in background (non-blocking)
     background_tasks.add_task(email_service.send_otp_email, existing.email, otp_code)
+    
+    print(f"✅ Background task added for email to {existing.email}")
     
     return {
         "message": "Verification code sent to your email. Please check your inbox.",
