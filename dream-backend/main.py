@@ -90,10 +90,22 @@ def register(
     # Log before sending email
     print(f"📧 Preparing to send OTP {otp_code} to {existing.email}")
     
-    # Send OTP email in background (non-blocking)
-    background_tasks.add_task(email_service.send_otp_email, existing.email, otp_code)
+    # TEMPORARY: Send email synchronously to debug (will make registration slower but shows if email works)
+    # TODO: Change back to background_tasks after debugging
+    try:
+        email_result = email_service.send_otp_email(existing.email, otp_code)
+        if email_result:
+            print(f"✅ Email sent successfully to {existing.email}")
+        else:
+            print(f"❌ Email sending failed for {existing.email}")
+    except Exception as e:
+        print(f"❌ Exception sending email to {existing.email}: {e}")
+        import traceback
+        print(f"📋 Traceback: {traceback.format_exc()}")
     
-    print(f"✅ Background task added for email to {existing.email}")
+    # Original background task (commented out for debugging):
+    # background_tasks.add_task(email_service.send_otp_email, existing.email, otp_code)
+    # print(f"✅ Background task added for email to {existing.email}")
     
     return {
         "message": "Verification code sent to your email. Please check your inbox.",
