@@ -21,9 +21,18 @@ app = FastAPI()
 
 # CORS middleware for frontend
 # Allow all Vercel domains (production and preview deployments)
+# Note: Can't use allow_origins=["*"] with allow_credentials=True
+# Using explicit origins + regex pattern
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Temporarily allow all origins to debug CORS issue
+    allow_origins=[
+        "http://localhost:5173",
+        "http://localhost:5174",
+        "http://localhost:3000",
+        "https://lucid-loom.vercel.app",
+        "https://lucid-loom-5s9xaxmhn-rns-projects-28c53b11.vercel.app",  # Current preview URL
+    ],
+    allow_origin_regex=r"https://.*\.vercel\.app",  # Allow all Vercel preview deployments
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
