@@ -1,10 +1,12 @@
 import { useState } from "react";
-import { registerUser } from "../api";
+import { registerUser, setAuthToken } from "../api";
 import { useNavigate, Link } from "react-router-dom";
 
 export default function Register() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const [loading, setLoading] = useState(false);
@@ -14,22 +16,30 @@ export default function Register() {
     e.preventDefault();
     setError("");
     setSuccess("");
+    
+    // Validate names
+    if (!firstName.trim() || !lastName.trim()) {
+      setError("First name and last name are required");
+      return;
+    }
+    
     setLoading(true);
     try {
       console.log("📝 Starting registration for:", email);
-      const response = await registerUser(email, password);
+      const response = await registerUser(email, password, firstName.trim(), lastName.trim());
       console.log("✅ Registration response:", response);
-      console.log("✅ Registration successful, navigating to verify-otp...");
       
-      // Show success message
-      setSuccess("Verification code sent! Redirecting...");
-      
-      // Small delay to show success message, then navigate
-      setTimeout(() => {
-        const verifyUrl = `/verify-otp?email=${encodeURIComponent(email)}&type=signup`;
-        console.log("🔗 Navigating to:", verifyUrl);
-        navigate(verifyUrl, { replace: true });
-      }, 500);
+      // Redirect to OTP verification page
+      if (response.data.message) {
+        // Show generic success message (OTP should only be in email)
+        setSuccess("Registration successful! Please check your email for the verification code.");
+        setTimeout(() => {
+          navigate(`/verify-otp?email=${encodeURIComponent(email)}`, { replace: true });
+        }, 1500);
+      } else {
+        setError("Registration response missing. Please try again.");
+        setLoading(false);
+      }
     } catch (err) {
       console.error("❌ Registration error:", err);
       console.error("❌ Error details:", {
@@ -42,20 +52,11 @@ export default function Register() {
         setError("Request timed out. Please check your connection and try again.");
         setLoading(false);
       } else if (err.response?.status === 400 && err.response?.data?.detail?.includes("already registered")) {
-        // User already exists but might not be verified
-        setError("Email already registered. Please check your email for the verification code or try logging in.");
-        // Still navigate to verify-otp in case they need to verify
-        setTimeout(() => {
-          navigate(`/verify-otp?email=${encodeURIComponent(email)}&type=signup`, { replace: true });
-        }, 2000);
+        setError("Email already registered. Please log in instead.");
         setLoading(false);
-      } else if (err.response?.status === 403) {
-        setError("Email verification required. Please check your email for the verification code.");
-        // Still navigate to verify-otp even on 403 (user might have registered)
         setTimeout(() => {
-          navigate(`/verify-otp?email=${encodeURIComponent(email)}&type=signup`, { replace: true });
+          navigate("/login", { replace: true });
         }, 2000);
-        setLoading(false);
       } else {
         const errorMsg = err.response?.data?.detail || err.message || "Registration failed";
         setError(errorMsg);
@@ -68,6 +69,24 @@ export default function Register() {
     <div className="auth-card">
       <h2>Sign up</h2>
       <form onSubmit={handleRegister}>
+        <label>First Name</label>
+        <input
+          type="text"
+          value={firstName}
+          onChange={(e) => setFirstName(e.target.value)}
+          required
+          placeholder="John"
+        />
+
+        <label>Last Name</label>
+        <input
+          type="text"
+          value={lastName}
+          onChange={(e) => setLastName(e.target.value)}
+          required
+          placeholder="Doe"
+        />
+
         <label>Email</label>
         <input
           type="email"
@@ -88,7 +107,7 @@ export default function Register() {
         {success && <p style={{ color: "#10b981", marginTop: "10px" }}>{success}</p>}
 
         <button type="submit" disabled={loading}>
-          {loading ? "Sending verification code..." : "Sign up"}
+          {loading ? "Creating account..." : "Sign up"}
         </button>
       </form>
       <p>
@@ -97,4 +116,3 @@ export default function Register() {
     </div>
   );
 }
-

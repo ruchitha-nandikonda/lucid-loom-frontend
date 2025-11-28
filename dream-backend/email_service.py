@@ -37,6 +37,10 @@ def send_otp_email(to_email: str, otp_code: str) -> bool:
     # Try SendGrid first (works better on Railway)
     if SENDGRID_API_KEY:
         print("📬 Using SendGrid API")
+        if not SENDGRID_FROM_EMAIL:
+            print("❌ SENDGRID_FROM_EMAIL not set in .env file!")
+            print("   Please set SENDGRID_FROM_EMAIL to a verified sender email in SendGrid")
+            return False
         return _send_via_sendgrid(to_email, otp_code)
     
     # Fallback to SMTP
@@ -52,8 +56,14 @@ def send_otp_email(to_email: str, otp_code: str) -> bool:
 def _send_via_sendgrid(to_email: str, otp_code: str) -> bool:
     """Send email using SendGrid API"""
     try:
-        from_email = SENDGRID_FROM_EMAIL or "lucidloom.app@gmail.com"
+        if not SENDGRID_FROM_EMAIL:
+            print("❌ SENDGRID_FROM_EMAIL not set in .env file")
+            print("   Please set SENDGRID_FROM_EMAIL to a verified sender email in SendGrid")
+            return False
+        
+        from_email = SENDGRID_FROM_EMAIL
         from_name = SENDGRID_FROM_NAME or "Lucid Loom"
+        print(f"📧 SendGrid: Sending from {from_email} to {to_email}")
         
         html_body = f"""
         <html>
@@ -109,6 +119,7 @@ def _send_via_sendgrid(to_email: str, otp_code: str) -> bool:
             "Content-Type": "application/json"
         }
         
+        print(f"📤 Sending email via SendGrid API...")
         response = requests.post(
             "https://api.sendgrid.com/v3/mail/send",
             json=payload,
@@ -116,11 +127,22 @@ def _send_via_sendgrid(to_email: str, otp_code: str) -> bool:
             timeout=10
         )
         
+        print(f"📬 SendGrid Response Status: {response.status_code}")
+        
         if response.status_code == 202:
             print(f"✅ OTP email sent to {to_email} via SendGrid")
             return True
         else:
-            print(f"❌ SendGrid API error: {response.status_code} - {response.text}")
+            error_text = response.text if response.text else "No error message"
+            print(f"❌ SendGrid API error: {response.status_code}")
+            print(f"   Error details: {error_text}")
+            try:
+                error_json = response.json()
+                if 'errors' in error_json:
+                    for error in error_json['errors']:
+                        print(f"   - {error.get('message', 'Unknown error')}")
+            except:
+                pass
             return False
             
     except Exception as e:

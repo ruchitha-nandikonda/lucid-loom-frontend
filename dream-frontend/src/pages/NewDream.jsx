@@ -5,7 +5,7 @@ import { useNavigate } from "react-router-dom";
 export default function NewDream() {
   const [title, setTitle] = useState("");
   const [rawText, setRawText] = useState("");
-  const [generateImage, setGenerateImage] = useState(false); // Default to false to save money
+  const [generateImage, setGenerateImage] = useState(false);
   const [result, setResult] = useState(null);
   const [loading, setLoading] = useState(false);
   const [status, setStatus] = useState("");
@@ -16,7 +16,7 @@ export default function NewDream() {
     e.preventDefault();
     
     setLoading(true);
-    setStatus(generateImage ? "Weaving your dream…" : "Analyzing your dream (no image to save $0.04)…");
+    setStatus(generateImage ? "Weaving your dream…" : "Analyzing your dream…");
     setResult(null);
     try {
       const res = await createDream(title, rawText, generateImage);
@@ -80,8 +80,13 @@ export default function NewDream() {
             setStatus("");
             setLoading(false);
             clearInterval(pollInterval);
+            // Check if there's an error message in the interpretation
+            if (fresh.data.interpretation.meaning && fresh.data.interpretation.meaning.includes("⚠️")) {
+              setStatus("⚠️ " + fresh.data.interpretation.meaning);
+            }
           }
         } catch (e) {
+          console.error("Polling error:", e);
           // Keep polling
         }
       }, 3000); // Poll every 3 seconds
@@ -132,67 +137,109 @@ export default function NewDream() {
   }, []);
 
   return (
-    <div className="new-dream-wrapper">
-      <div className="new-dream-form">
-        <h2>Describe your dream</h2>
-        <form onSubmit={handleSubmit}>
-          <label>Title</label>
-          <input
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-            placeholder="Flying through a mirror forest"
-            required
-          />
+    <div className="new-dream-wrapper-creative">
+      {/* Floating background elements */}
+      <div className="new-dream-bg-elements">
+        <div className="new-dream-blob blob-1"></div>
+        <div className="new-dream-blob blob-2"></div>
+      </div>
 
-          <label>Dream details</label>
-          <textarea
-            value={rawText}
-            onChange={(e) => setRawText(e.target.value)}
-            rows={8}
-            placeholder="Write what you remember from your dream..."
-            required
-          />
-
-          <div style={{ marginBottom: "1rem", display: "flex", alignItems: "center", gap: "0.5rem" }}>
+      <div className="new-dream-form-creative">
+        <div className="form-header-creative">
+          <span className="form-icon-large">✨</span>
+          <h2 className="form-title-creative">Describe your dream</h2>
+          <p className="form-subtitle-creative">Capture the essence of your nighttime journey</p>
+        </div>
+        <form onSubmit={handleSubmit} className="dream-form-creative">
+          <div className="form-group-creative">
+            <label className="form-label-creative">
+              <span className="label-icon">📝</span>
+              Title
+            </label>
             <input
-              type="checkbox"
-              id="generateImage"
-              checked={generateImage}
-              onChange={(e) => setGenerateImage(e.target.checked)}
-              style={{ cursor: "pointer" }}
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              placeholder="Flying through a mirror forest"
+              className="form-input-creative"
+              required
             />
-            <label htmlFor="generateImage" style={{ cursor: "pointer", fontSize: "0.9rem", color: "#9ca3af" }}>
-              Generate image {generateImage ? "($0.04 cost)" : "(saves $0.04)"}
+          </div>
+
+          <div className="form-group-creative">
+            <label className="form-label-creative">
+              <span className="label-icon">💭</span>
+              Dream details
+            </label>
+            <textarea
+              value={rawText}
+              onChange={(e) => setRawText(e.target.value)}
+              rows={8}
+              placeholder="Write what you remember from your dream..."
+              className="form-textarea-creative"
+              required
+            />
+          </div>
+
+          <div className="checkbox-group-creative">
+            <label htmlFor="generateImage" className="checkbox-label-creative">
+              <input
+                type="checkbox"
+                id="generateImage"
+                checked={generateImage}
+                onChange={(e) => setGenerateImage(e.target.checked)}
+                className="checkbox-input-creative"
+              />
+              <span className="checkbox-custom"></span>
+              <span className="checkbox-text">
+                <span className="checkbox-icon">🖼️</span>
+                Generate image
+              </span>
             </label>
           </div>
           
           {!generateImage && (
-            <div style={{ 
-              marginBottom: "1rem", 
-              padding: "0.75rem", 
-              background: "#1f2933", 
-              borderRadius: "8px",
-              fontSize: "0.85rem",
-              color: "#9ca3af"
-            }}>
-              💡 <strong>Tip:</strong> You'll still get full AI interpretation (narrative, meaning, symbols, emotions) - just without the image. Save $0.04 per dream!
+            <div className="tip-box-creative">
+              <span className="tip-icon">💡</span>
+              <div className="tip-content">
+                <strong>Tip:</strong> You'll still get full AI interpretation (narrative, meaning, symbols, emotions) - just without the image.
+              </div>
             </div>
           )}
 
-          <button type="submit" disabled={loading}>
-            {loading ? "Interpreting..." : "Interpret my dream"}
+          <button type="submit" disabled={loading} className="submit-button-creative">
+            <span className="button-icon">{loading ? "🔄" : "✨"}</span>
+            <span>{loading ? "Interpreting..." : "Interpret my dream"}</span>
           </button>
         </form>
-        {status && <p className="dream-date" style={{marginTop: 8}}>{status}</p>}
+        {status && (
+          <div className="status-message-creative">
+            <span className="status-icon">⏳</span>
+            <p>{status}</p>
+          </div>
+        )}
       </div>
 
       {result && result.interpretation && (
-        <div className="new-dream-result">
-          <h3>Your dream, reimagined</h3>
-          <p>{result.interpretation.poetic_narrative}</p>
+        <div className="new-dream-result-creative">
+          {result.interpretation.meaning && result.interpretation.meaning.includes("⚠️") ? (
+            <div className="error-card" style={{ marginTop: "1rem", padding: "1rem", background: "#7f1d1d", borderRadius: "8px" }}>
+              <h3 style={{ color: "#fca5a5", marginTop: 0 }}>⚠️ Configuration Error</h3>
+              <p style={{ color: "#fee2e2", whiteSpace: "pre-line" }}>{result.interpretation.meaning}</p>
+              <p style={{ color: "#fca5a5", marginTop: "1rem", fontSize: "0.9rem" }}>
+                <strong>To fix:</strong> Add your GROQ_API_KEY to <code>dream-backend/.env</code> and restart the backend server.
+                <br />
+                Get a free API key from: <a href="https://console.groq.com/" target="_blank" rel="noopener noreferrer" style={{ color: "#93c5fd" }}>https://console.groq.com/</a>
+              </p>
+            </div>
+          ) : (
+            <>
+              <h3>Your dream, reimagined</h3>
+              <p>{result.interpretation.poetic_narrative}</p>
 
-          <h4>Meaning</h4>
-          <p>{result.interpretation.meaning}</p>
+              <h4>Meaning</h4>
+              <p>{result.interpretation.meaning}</p>
+            </>
+          )}
 
           <h4>Symbols</h4>
           <p>{result.interpretation.symbols}</p>

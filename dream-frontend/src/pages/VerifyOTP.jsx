@@ -37,6 +37,7 @@ export default function VerifyOTP() {
         // Verify token was stored
         const storedToken = getToken();
         console.log("🔍 Token stored after OTP:", storedToken ? "Yes" : "No");
+        console.log("🔍 Token value:", storedToken ? storedToken.substring(0, 30) + "..." : "None");
         
         if (!storedToken) {
           setError("Failed to store authentication token. Please try logging in manually.");
@@ -44,10 +45,16 @@ export default function VerifyOTP() {
           return;
         }
         
+        // Double-check token is in localStorage
+        const localStorageToken = localStorage.getItem("token");
+        console.log("🔍 Token in localStorage:", localStorageToken ? "Yes" : "No");
+        
         setSuccess("Email verified successfully! Redirecting...");
+        // Use window.location for a full page reload to ensure token is properly initialized
         setTimeout(() => {
-          navigate("/"); // Use navigate instead of window.location for better React Router handling
-        }, 1000);
+          console.log("🔄 Navigating to home page...");
+          window.location.href = "/";
+        }, 1500);
       } else {
         setError("Verification failed - no token received");
         setLoading(false);

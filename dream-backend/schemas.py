@@ -7,6 +7,8 @@ from typing import Optional, List
 class UserCreate(BaseModel):
     email: EmailStr
     password: str
+    first_name: str
+    last_name: str
 
 
 class UserLogin(BaseModel):
@@ -17,6 +19,9 @@ class UserLogin(BaseModel):
 class UserOut(BaseModel):
     id: int
     email: EmailStr
+    username: Optional[str] = None
+    first_name: Optional[str] = None
+    last_name: Optional[str] = None
 
     class Config:
         from_attributes = True
@@ -24,6 +29,11 @@ class UserOut(BaseModel):
 
 class ForgotPasswordRequest(BaseModel):
     email: EmailStr
+
+
+class VerifyResetOTPRequest(BaseModel):
+    email: EmailStr
+    otp_code: str
 
 
 class ResetPasswordRequest(BaseModel):
@@ -36,9 +46,14 @@ class ChangePasswordRequest(BaseModel):
     new_password: str
 
 
+class DeleteAccountRequest(BaseModel):
+    password: str
+
+
 class RegisterResponse(BaseModel):
     message: str
     email: EmailStr
+    otp_sent: bool = False
 
 
 class VerifyOTPRequest(BaseModel):
@@ -103,7 +118,7 @@ class AnalyticsSummary(BaseModel):
     dreams_with_images: int
     top_symbols: List[dict]
     top_emotions: List[dict]
-    dreams_by_month: List[dict]
+    dreams_with_dates: List[dict]  # Changed from dreams_by_day - contains created_at ISO strings
 
 
 class PatternAnalysisResponse(BaseModel):

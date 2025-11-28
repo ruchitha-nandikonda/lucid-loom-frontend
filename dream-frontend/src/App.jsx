@@ -23,6 +23,62 @@ function PrivateRoute({ children }) {
   return children;
 }
 
+function HomeRoute() {
+  const [token, setToken] = useState(null);
+  const [checking, setChecking] = useState(true);
+
+  useEffect(() => {
+    // Check token immediately and also with a small delay to catch any race conditions
+    const checkToken = () => {
+      const foundToken = getToken();
+      console.log("🔍 HomeRoute - Token check:", foundToken ? "Found" : "Not found");
+      if (foundToken) {
+        console.log("🔍 Token preview:", foundToken.substring(0, 30) + "...");
+        setAuthToken(foundToken);
+        setToken(foundToken);
+      } else {
+        // Double-check localStorage directly
+        const localStorageToken = localStorage.getItem("token");
+        console.log("🔍 HomeRoute - Direct localStorage check:", localStorageToken ? "Found" : "Not found");
+        if (localStorageToken) {
+          console.log("✅ Found token in localStorage, using it");
+          setAuthToken(localStorageToken);
+          setToken(localStorageToken);
+        } else {
+          setToken(null);
+        }
+      }
+      setChecking(false);
+    };
+    
+    // Check immediately
+    checkToken();
+    
+    // Also check after a small delay to catch any race conditions
+    const timer = setTimeout(checkToken, 100);
+    return () => clearTimeout(timer);
+  }, []);
+
+  if (checking) {
+    return null; // Or a loading spinner
+  }
+
+  if (token) {
+    console.log("✅ HomeRoute: Showing DreamList (logged in)");
+    return (
+      <>
+        <Navbar />
+        <div className="container">
+          <DreamList />
+        </div>
+      </>
+    );
+  }
+
+  console.log("⚠️ HomeRoute: Showing LandingPage (not logged in)");
+  return <LandingPage />;
+}
+
 function App() {
   const [initialized, setInitialized] = useState(false);
 
@@ -34,8 +90,14 @@ function App() {
       // Verify token is set in axios
       console.log("✅ Token initialized in axios");
       console.log("🔍 Token value:", token.substring(0, 20) + "...");
+      // Double-check localStorage
+      const localStorageToken = localStorage.getItem("token");
+      console.log("🔍 Token in localStorage:", localStorageToken ? "Yes" : "No");
     } else {
       console.log("⚠️ No token found in storage");
+      // Check both storages
+      console.log("🔍 localStorage token:", localStorage.getItem("token") ? "Exists" : "Missing");
+      console.log("🔍 sessionStorage token:", sessionStorage.getItem("token") ? "Exists" : "Missing");
       // Clear any stale axios headers
       setAuthToken(null);
     }
@@ -49,28 +111,7 @@ function App() {
       <Router>
         <Routes>
           {/* Landing page - no navbar */}
-          <Route
-            path="/"
-            element={
-              (() => {
-                const token = getToken();
-                console.log("🔍 Route '/' - Token check:", token ? "Found" : "Not found");
-                if (token) {
-                  console.log("✅ Showing DreamList (logged in)");
-                  return (
-                    <>
-                      <Navbar />
-                      <div className="container">
-                        <DreamList />
-                      </div>
-                    </>
-                  );
-                }
-                console.log("✅ Showing LandingPage (not logged in)");
-                return <LandingPage />;
-              })()
-            }
-          />
+          <Route path="/" element={<HomeRoute />} />
           
           {/* Auth pages - no navbar */}
           <Route path="/login" element={<Login />} />

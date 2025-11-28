@@ -21,14 +21,21 @@ function getToken() {
 
 function setAuthToken(token, remember = true) {
   if (token) {
+    console.log("🔐 setAuthToken called with token:", token.substring(0, 30) + "...", "remember:", remember);
     api.defaults.headers.common["Authorization"] = `Bearer ${token}`;
     if (remember) {
       localStorage.setItem("token", token);
       sessionStorage.removeItem("token");
+      console.log("✅ Token stored in localStorage");
     } else {
       sessionStorage.setItem("token", token);
+      console.log("✅ Token stored in sessionStorage");
     }
+    // Verify it was stored
+    const verifyToken = getToken();
+    console.log("🔍 Verification - token retrievable:", verifyToken ? "Yes" : "No");
   } else {
+    console.log("🔐 setAuthToken called with null - clearing tokens");
     delete api.defaults.headers.common["Authorization"];
     localStorage.removeItem("token");
     sessionStorage.removeItem("token");
@@ -60,6 +67,8 @@ api.interceptors.response.use(
       console.log("⚠️ 401 Unauthorized - checking token...");
       const currentToken = getToken();
       console.log("🔍 Current token:", currentToken ? "Exists" : "Missing");
+      console.log("🔍 Request URL:", error.config?.url);
+      console.log("🔍 Current pathname:", window.location.pathname);
       
       // Only clear token and redirect if we're not on auth pages
       // This prevents clearing token during login/register attempts
@@ -69,11 +78,19 @@ api.interceptors.response.use(
                         window.location.pathname === "/forgot-password" ||
                         window.location.pathname === "/reset-password";
       
-      if (!isAuthPage) {
-        console.log("⚠️ Clearing token and redirecting to login");
+      // Also don't clear token if we just verified OTP (might be a race condition)
+      // Check if the failed request was to a protected endpoint
+      const isProtectedEndpoint = error.config?.url?.includes("/dreams") || 
+                                  error.config?.url?.includes("/analytics") ||
+                                  error.config?.url?.includes("/settings");
+      
+      if (!isAuthPage && isProtectedEndpoint) {
+        console.log("⚠️ 401 on protected endpoint, clearing token and redirecting to login");
         setAuthToken(null);
         // Use window.location.href for full page reload to clear any state
         window.location.href = "/login";
+      } else if (!isAuthPage) {
+        console.log("⚠️ 401 but not on protected endpoint, might be a race condition - not clearing token");
       } else {
         console.log("ℹ️ On auth page, not clearing token or redirecting");
       }
@@ -95,8 +112,13 @@ export function clearRememberedEmail() {
 }
 
 // Auth
-export function registerUser(email, password) {
-  return api.post("/auth/register", { email, password });
+export function registerUser(email, password, firstName, lastName) {
+  return api.post("/auth/register", { 
+    email, 
+    password, 
+    first_name: firstName, 
+    last_name: lastName 
+  });
 }
 
 export function verifyOTP(email, otpCode, password = null) {
@@ -165,6 +187,10 @@ export function forgotPassword(email) {
   return api.post("/auth/forgot-password", { email });
 }
 
+export function verifyResetOTP(email, otpCode) {
+  return api.post("/auth/verify-reset-otp", { email, otp_code: otpCode });
+}
+
 export function resetPassword(token, newPassword) {
   return api.post("/auth/reset-password", { token, new_password: newPassword });
 }
@@ -173,6 +199,28 @@ export function changePassword(currentPassword, newPassword) {
   return api.post("/auth/change-password", {
     current_password: currentPassword,
     new_password: newPassword,
+  });
+}
+
+// User settings
+export function getUserInfo() {
+  return api.get("/user/info");
+}
+
+export function getUserStats() {
+  return api.get("/user/stats");
+}
+
+export function exportUserData() {
+  return api.get("/user/export");
+}
+
+export function deleteAccount(password) {
+  return api.delete("/user/account", {
+    data: { password },
+    headers: {
+      'Content-Type': 'application/json',
+    },
   });
 }
 

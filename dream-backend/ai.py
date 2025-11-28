@@ -285,31 +285,35 @@ async def analyze_dream_patterns(dreams_data: list):
     for dream in dreams_data[:10]:  # Last 10 dreams
         summary = f"Dream: {dream.get('title', 'Untitled')}\n"
         summary += f"Text: {dream.get('raw_text', '')[:200]}\n"
-        if dream.get('interpretation'):
-            summary += f"Symbols: {dream.get('interpretation', {}).get('symbols', '')}\n"
-            summary += f"Emotions: {dream.get('interpretation', {}).get('emotions', '')}\n"
-        elif dream.get('symbols'):
+        # Check for symbols and emotions directly (from main.py structure)
+        if dream.get('symbols'):
             summary += f"Symbols: {dream.get('symbols', '')}\n"
-        elif dream.get('emotions'):
+        if dream.get('emotions'):
             summary += f"Emotions: {dream.get('emotions', '')}\n"
         dream_summaries.append(summary)
     
     combined_dreams = "\n\n---\n\n".join(dream_summaries)
     
     system_prompt = """
-You are a dream pattern analyst.
-Analyze the provided dreams and identify:
-1. Recurring symbols (which appear in multiple dreams)
-2. Recurring emotions
-3. Emotional trends (are they becoming more positive, negative, or chaotic?)
-4. Main themes or patterns
+You are a dream pattern analyst specializing in pattern recognition across multiple dreams.
+Analyze the provided collection of dreams and identify:
+
+1. Recurring themes or motifs that appear across multiple dreams
+2. Emotional patterns and trends (how emotions evolve over time)
+3. Common symbols and their frequency/patterns
+4. Temporal patterns (how dreams change over time)
+5. Personal insights and growth patterns
+6. Recommendations for further exploration
 
 Respond in JSON format with keys:
-- recurring_symbols: list of symbols that appear multiple times
-- recurring_emotions: list of emotions that repeat
-- emotional_trend: "positive", "negative", "chaotic", or "mixed"
-- main_themes: 2-3 main themes you notice
-- pattern_summary: a 2-3 sentence summary of the patterns you found
+- recurring_themes: A detailed description of recurring themes or motifs across the dreams (3-5 sentences)
+- emotional_patterns: Analysis of emotional patterns and trends (3-5 sentences)
+- symbol_patterns: Analysis of common symbols and their patterns (3-5 sentences)
+- temporal_insights: Insights about how dreams change over time (3-5 sentences)
+- personal_growth: Personal insights and growth patterns observed (3-5 sentences)
+- recommendations: Recommendations for further exploration and reflection (2-4 sentences)
+
+Be insightful, supportive, and focus on patterns that could help the dreamer understand themselves better.
 """
 
     headers = {
@@ -328,7 +332,7 @@ Respond in JSON format with keys:
     }
 
     async with httpx.AsyncClient() as client:
-        resp = await client.post(GROQ_URL, headers=headers, json=payload, timeout=60)
+        resp = await client.post(GROQ_URL, headers=headers, json=payload, timeout=90)
         
         if resp.status_code != 200:
             error_data = resp.json() if resp.content else {}
@@ -337,4 +341,13 @@ Respond in JSON format with keys:
     data = resp.json()
     content = data["choices"][0]["message"]["content"]
     import json
-    return json.loads(content)
+    try:
+        result = json.loads(content)
+        # Ensure all required keys exist
+        required_keys = ["recurring_themes", "emotional_patterns", "symbol_patterns", "temporal_insights", "personal_growth", "recommendations"]
+        for key in required_keys:
+            if key not in result:
+                result[key] = f"Analysis for {key.replace('_', ' ')} is not available."
+        return result
+    except json.JSONDecodeError as e:
+        raise Exception(f"Failed to parse AI response as JSON: {str(e)}. Response: {content[:200]}")

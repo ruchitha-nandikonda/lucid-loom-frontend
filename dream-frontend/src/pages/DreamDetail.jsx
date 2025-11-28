@@ -141,6 +141,31 @@ export default function DreamDetail() {
     }
   }
 
+  function formatDreamDate(dateString) {
+    if (!dateString) return '';
+    try {
+      const date = new Date(dateString);
+      // Check if date is valid
+      if (isNaN(date.getTime())) return dateString;
+      
+      // Format as: "Jan 15, 2024 at 2:30 PM"
+      const dateStr = date.toLocaleDateString('en-US', { 
+        year: 'numeric', 
+        month: 'short', 
+        day: 'numeric'
+      });
+      const timeStr = date.toLocaleTimeString('en-US', {
+        hour: 'numeric',
+        minute: '2-digit',
+        hour12: true
+      });
+      return `${dateStr} at ${timeStr}`;
+    } catch (e) {
+      console.error('Date formatting error:', e, dateString);
+      return dateString;
+    }
+  }
+
   function parseSymbols(symbolsText) {
     if (!symbolsText) return [];
     try {
@@ -160,16 +185,185 @@ export default function DreamDetail() {
       .filter((s) => s.length > 0);
   }
 
+  function getSymbolEmoji(symbol) {
+    const symbolLower = symbol.toLowerCase().trim();
+    const emojiMap = {
+      // Knowledge & Learning
+      'library': '📚', 'libraries': '📚',
+      'book': '📖', 'books': '📖', 'page': '📄', 'pages': '📄',
+      'title': '📝', 'titles': '📝',
+      'knowledge': '🧠', 'know': '🧠',
+      'learning': '📚', 'learn': '📚', 'study': '📚',
+      'education': '🎓', 'school': '🏫',
+      'wisdom': '🦉', 'wise': '🦉',
+      
+      // Self & Personal Growth
+      'self-discovery': '🔍', 'self': '🪞', 'discovery': '🔍',
+      'transformation': '🦋', 'transform': '🦋', 'change': '🔄',
+      'growth': '🌱', 'grow': '🌱',
+      'journey': '🗺️', 'path': '🛤️',
+      
+      // Uncertainty & Emotions
+      'uncertainty': '❓', 'uncertain': '❓', 'unknown': '❓',
+      'confusion': '😕', 'confused': '😕',
+      'doubt': '🤔', 'question': '❓',
+      
+      // Nature
+      'ocean': '🌊', 'sea': '🌊', 'water': '💧', 'wave': '🌊',
+      'shark': '🦈', 'fish': '🐟', 'whale': '🐋', 'dolphin': '🐬',
+      'bird': '🐦', 'eagle': '🦅', 'owl': '🦉', 'crow': '🐦‍⬛',
+      'tree': '🌳', 'forest': '🌲', 'flower': '🌸', 'rose': '🌹',
+      'moon': '🌙', 'sun': '☀️', 'star': '⭐', 'sky': '☁️',
+      'fire': '🔥', 'flame': '🔥', 'lightning': '⚡', 'storm': '⛈️',
+      'mountain': '⛰️', 'hill': '🏔️', 'valley': '🏞️',
+      
+      // Buildings & Structures
+      'house': '🏠', 'building': '🏢', 'door': '🚪', 'window': '🪟',
+      'car': '🚗', 'road': '🛣️', 'bridge': '🌉',
+      
+      // Animals
+      'snake': '🐍', 'dragon': '🐉', 'tiger': '🐅', 'lion': '🦁',
+      'cat': '🐱', 'dog': '🐶', 'wolf': '🐺', 'bear': '🐻',
+      
+      // Objects
+      'key': '🗝️', 'lock': '🔒', 'gate': '🚧',
+      'mirror': '🪞', 'glass': '🪟', 'crystal': '💎',
+      'letter': '✉️',
+      'heart': '❤️', 'love': '💕', 'kiss': '💋',
+      'eye': '👁️', 'vision': '👁️',
+      'hand': '✋', 'finger': '👉', 'touch': '✋',
+      'foot': '🦶', 'walk': '🚶', 'run': '🏃',
+      'flight': '✈️', 'fly': '🕊️', 'wing': '🪽',
+      'death': '💀', 'skull': '💀', 'grave': '🪦',
+      'baby': '👶', 'child': '🧒', 'person': '👤',
+      'money': '💰', 'coin': '🪙', 'gold': '🪙',
+      'food': '🍽️', 'apple': '🍎', 'bread': '🍞',
+      'knife': '🔪', 'sword': '⚔️', 'weapon': '🗡️',
+      'crown': '👑', 'king': '👑', 'queen': '👸',
+      'ring': '💍', 'jewelry': '💎', 'diamond': '💎',
+      'clock': '🕐', 'time': '⏰', 'hourglass': '⏳',
+      'light': '💡', 'lamp': '🪔', 'candle': '🕯️',
+      'dark': '🌑', 'shadow': '🌑', 'night': '🌙',
+      'rain': '🌧️', 'snow': '❄️', 'ice': '🧊',
+      'wind': '💨', 'air': '💨', 'breeze': '💨',
+      'earth': '🌍', 'ground': '🌍', 'soil': '🌱',
+      'blood': '🩸', 'red': '🔴', 'wound': '🩹',
+    };
+    
+    // Try exact match first
+    if (emojiMap[symbolLower]) {
+      return emojiMap[symbolLower];
+    }
+    
+    // Try partial match (check if symbol contains any key or vice versa)
+    for (const [key, emoji] of Object.entries(emojiMap)) {
+      if (symbolLower.includes(key) || key.includes(symbolLower)) {
+        return emoji;
+      }
+    }
+    
+    // Try word-by-word matching for compound words
+    const words = symbolLower.split(/[\s\-_]+/);
+    for (const word of words) {
+      if (emojiMap[word]) {
+        return emojiMap[word];
+      }
+    }
+    
+    // Default emoji based on first letter or common patterns
+    if (symbolLower.startsWith('lib') || symbolLower.includes('book')) return '📚';
+    if (symbolLower.startsWith('know') || symbolLower.includes('learn')) return '🧠';
+    if (symbolLower.startsWith('self') || symbolLower.includes('discover')) return '🔍';
+    if (symbolLower.startsWith('transform') || symbolLower.includes('change')) return '🦋';
+    if (symbolLower.startsWith('uncertain') || symbolLower.includes('unknown')) return '❓';
+    if (symbolLower.startsWith('o')) return '🌊';
+    if (symbolLower.startsWith('s')) return '⭐';
+    if (symbolLower.startsWith('w')) return '💧';
+    if (symbolLower.startsWith('f')) return '🔥';
+    if (symbolLower.startsWith('d')) return '🌙';
+    if (symbolLower.startsWith('l')) return '💡';
+    if (symbolLower.startsWith('h')) return '🏠';
+    if (symbolLower.startsWith('m')) return '🌙';
+    if (symbolLower.startsWith('t')) return '🌳';
+    
+    return '🔮'; // Default symbol emoji
+  }
+  
+  function getEmotionEmoji(emotion) {
+    const emotionLower = emotion.toLowerCase().trim();
+    const emojiMap = {
+      'curiosity': '🔍', 'curious': '🔍',
+      'wonder': '✨', 'wondering': '✨',
+      'confusion': '😕', 'confused': '😕',
+      'anticipation': '⏳', 'anticipate': '⏳',
+      'fear': '😨', 'scared': '😱', 'afraid': '😨',
+      'anxiety': '😰', 'anxious': '😰', 'worried': '😰',
+      'joy': '😄', 'joyful': '😄',
+      'happiness': '😊', 'happy': '😊',
+      'sadness': '😢', 'sad': '😢',
+      'anger': '😠', 'angry': '😠', 'mad': '😡',
+      'peace': '☮️', 'peaceful': '☮️', 'calm': '😌',
+      'excitement': '🤩', 'excited': '🤩',
+      'love': '❤️', 'loving': '❤️',
+      'surprise': '😲', 'surprised': '😲',
+      'disgust': '🤢', 'disgusted': '🤢',
+      'shame': '😳', 'ashamed': '😳',
+      'guilt': '😔', 'guilty': '😔',
+      'hope': '🌟', 'hopeful': '🌟',
+      'despair': '😞', 'desperate': '😞',
+      'loneliness': '😔', 'lonely': '😔',
+      'contentment': '😌', 'content': '😌',
+      'gratitude': '🙏', 'grateful': '🙏',
+      'pride': '😎', 'proud': '😎',
+      'envy': '😒', 'jealous': '😒',
+      'relief': '😌', 'relieved': '😌',
+      'embarrassment': '😳', 'embarrassed': '😳',
+    };
+    
+    // Try exact match first
+    if (emojiMap[emotionLower]) {
+      return emojiMap[emotionLower];
+    }
+    
+    // Try partial match
+    for (const [key, emoji] of Object.entries(emojiMap)) {
+      if (emotionLower.includes(key) || key.includes(emotionLower)) {
+        return emoji;
+      }
+    }
+    
+    // Default based on emotion type
+    if (emotionLower.includes('curious') || emotionLower.includes('wonder')) return '🔍';
+    if (emotionLower.includes('happy') || emotionLower.includes('joy')) return '😄';
+    if (emotionLower.includes('sad') || emotionLower.includes('sorrow')) return '😢';
+    if (emotionLower.includes('angry') || emotionLower.includes('rage')) return '😠';
+    if (emotionLower.includes('fear') || emotionLower.includes('scared')) return '😨';
+    if (emotionLower.includes('love') || emotionLower.includes('affection')) return '❤️';
+    if (emotionLower.includes('confus') || emotionLower.includes('uncertain')) return '😕';
+    
+    return '💭'; // Default emotion emoji
+  }
+
   if (loading) return <p>Loading dream...</p>;
   if (!dream) return <p>Dream not found</p>;
 
   return (
-    <div className="dream-detail">
-      <div className="dream-header">
-        <div>
-          <h2>{dream.title}</h2>
-          <p className="dream-date">
-            {new Date(dream.created_at).toLocaleString()}
+    <div className="dream-detail-creative">
+      {/* Floating background elements */}
+      <div className="dream-detail-bg-elements">
+        <div className="detail-blob blob-1"></div>
+        <div className="detail-blob blob-2"></div>
+      </div>
+
+      <div className="dream-header-creative">
+        <div className="dream-header-content">
+          <div className="dream-title-wrapper">
+            <span className="dream-title-icon">🌙</span>
+            <h2 className="dream-title-creative">{dream.title}</h2>
+          </div>
+          <p className="dream-date-creative-detail">
+            <span className="date-icon-detail">📅</span>
+            {formatDreamDate(dream.created_at)}
           </p>
         </div>
         <div className="dream-actions">
@@ -235,78 +429,113 @@ export default function DreamDetail() {
         </div>
       )}
 
-      <div className="dream-original">
-        <h3>Original Dream</h3>
+      <div className="dream-original-creative">
+        <div className="section-header-creative">
+          <span className="section-icon">📝</span>
+          <h3>Original Dream</h3>
+        </div>
         {isEditing ? (
-          <div className="edit-form">
-            <label>Title</label>
+          <div className="edit-form-creative">
+            <label className="edit-label-creative">Title</label>
             <input
               type="text"
               value={editTitle}
               onChange={(e) => setEditTitle(e.target.value)}
-              className="edit-input"
+              className="edit-input-creative"
             />
-            <label>Dream Text</label>
+            <label className="edit-label-creative">Dream Text</label>
             <textarea
               value={editText}
               onChange={(e) => setEditText(e.target.value)}
               rows={8}
-              className="edit-textarea"
+              className="edit-textarea-creative"
             />
           </div>
         ) : (
-          <p>{dream.raw_text}</p>
+          <div className="dream-text-creative">
+            <p>{dream.raw_text}</p>
+          </div>
         )}
       </div>
 
       {dream.interpretation && (
-        <div className="dream-interpretation">
-          <div className="interpretation-header">
-            <h3>✨ Your dream, reimagined</h3>
-            <div className="interpretation-stats">
-              <span className="stat-badge">
+        <div className="dream-interpretation-creative">
+          <div className="interpretation-header-creative">
+            <div className="interpretation-title-wrapper">
+              <span className="interpretation-icon-large">✨</span>
+              <h3 className="interpretation-title-creative">Your dream, reimagined</h3>
+            </div>
+            <div className="interpretation-stats-creative">
+              <span className="stat-badge-creative">
+                <span className="stat-icon">🔮</span>
                 {parseSymbols(dream.interpretation.symbols || '').length} symbols
               </span>
-              <span className="stat-badge">
+              <span className="stat-badge-creative">
+                <span className="stat-icon">💗</span>
                 {dream.interpretation.emotions ? dream.interpretation.emotions.split(/[,\n]/).filter(e => e.trim()).length : 0} emotions
               </span>
             </div>
           </div>
           
-          <div className="interpretation-content">
-            <div className="narrative-section">
-              <h4>📖 Poetic Narrative</h4>
-              <p className="narrative-text">{dream.interpretation.poetic_narrative}</p>
+          <div className="interpretation-content-creative">
+            <div className="narrative-section-creative">
+              <div className="section-header-small">
+                <span className="section-icon-small">📖</span>
+                <h4>Poetic Narrative</h4>
+              </div>
+              <div className="narrative-text-creative">
+                <p>{dream.interpretation.poetic_narrative}</p>
+              </div>
             </div>
 
-            <div className="meaning-section">
-              <h4>💭 Meaning</h4>
-              <p className="meaning-text">{dream.interpretation.meaning}</p>
+            <div className="meaning-section-creative">
+              <div className="section-header-small">
+                <span className="section-icon-small">💭</span>
+                <h4>Meaning</h4>
+              </div>
+              <div className="meaning-text-creative">
+                <p>{dream.interpretation.meaning}</p>
+              </div>
             </div>
           </div>
 
-          <h4>Symbols</h4>
-          <div className="symbols-list">
-            {parseSymbols(dream.interpretation.symbols).map((symbol, idx) => {
-              const colors = ['#6366f1', '#8b5cf6', '#a78bfa', '#c084fc', '#d946ef', '#ec4899'];
-              const color = colors[idx % colors.length];
-              return (
-                <button
-                  key={idx}
-                  className={`symbol-button ${selectedSymbol === symbol ? "active" : ""}`}
-                  onClick={() => handleExplainSymbol(symbol)}
-                  disabled={explaining}
-                  style={{
-                    background: selectedSymbol === symbol ? color : 'transparent',
-                    borderColor: color,
-                    color: selectedSymbol === symbol ? 'white' : color
-                  }}
-                >
-                  <span className="symbol-icon">🔮</span>
-                  {symbol}
-                </button>
-              );
-            })}
+          <div className="symbols-section-creative">
+            <div className="section-header-small">
+              <span className="section-icon-small">🔮</span>
+              <h4>Symbols</h4>
+            </div>
+            <div className="symbols-list-creative">
+              {parseSymbols(dream.interpretation.symbols).map((symbol, idx) => {
+                const symbolEmoji = getSymbolEmoji(symbol);
+                const colors = [
+                  'linear-gradient(135deg, #6366f1, #8b5cf6)',
+                  'linear-gradient(135deg, #8b5cf6, #a78bfa)',
+                  'linear-gradient(135deg, #a78bfa, #c084fc)',
+                  'linear-gradient(135deg, #c084fc, #d946ef)',
+                  'linear-gradient(135deg, #d946ef, #ec4899)',
+                  'linear-gradient(135deg, #ec4899, #f472b6)'
+                ];
+                const color = colors[idx % colors.length];
+                return (
+                  <button
+                    key={idx}
+                    className={`symbol-button-creative ${selectedSymbol === symbol ? "active" : ""}`}
+                    onClick={() => handleExplainSymbol(symbol)}
+                    disabled={explaining}
+                    style={{
+                      background: selectedSymbol === symbol ? color : 'rgba(255, 255, 255, 0.5)',
+                      borderColor: selectedSymbol === symbol ? 'transparent' : `rgba(${idx % 2 === 0 ? '99, 102, 241' : '236, 72, 153'}, 0.5)`,
+                      color: selectedSymbol === symbol ? 'white' : '#0f172a',
+                      animationDelay: `${idx * 0.1}s`
+                    }}
+                  >
+                    <span className="symbol-icon-creative">{symbolEmoji}</span>
+                    {symbol}
+                    {selectedSymbol === symbol && <span className="symbol-sparkle">✨</span>}
+                  </button>
+                );
+              })}
+            </div>
           </div>
           
           {explaining && selectedSymbol && (
@@ -345,62 +574,90 @@ export default function DreamDetail() {
             </div>
           )}
 
-          <h4>Emotions</h4>
-          {dream.interpretation.emotions ? (
-            <div className="emotions-visual">
-              {dream.interpretation.emotions.split(/[,\n]/)
-                .map((emo, idx) => {
-                  const trimmed = emo.trim();
-                  if (!trimmed) return null;
-                  const emotionColors = {
-                    'fear': '#ef4444', 'anxiety': '#f97316', 'joy': '#10b981',
-                    'happiness': '#10b981', 'sadness': '#3b82f6', 'anger': '#dc2626',
-                    'peace': '#8b5cf6', 'wonder': '#fbbf24', 'confusion': '#6b7280',
-                    'excitement': '#ec4899', 'calm': '#06b6d4', 'love': '#f472b6'
-                  };
-                  const color = emotionColors[trimmed.toLowerCase()] || '#6366f1';
-                  return (
-                    <span key={idx} className="emotion-tag" style={{ background: color + '20', borderColor: color, color }}>
-                      {trimmed}
-                    </span>
-                  );
-                })
-                .filter(item => item !== null)}
+          <div className="emotions-section-creative">
+            <div className="section-header-small">
+              <span className="section-icon-small">💗</span>
+              <h4>Emotions</h4>
             </div>
-          ) : (
-            <p>No emotions recorded</p>
-          )}
+            {dream.interpretation.emotions ? (
+              <div className="emotions-visual-creative">
+                {dream.interpretation.emotions.split(/[,\n]/)
+                  .map((emo, idx) => {
+                    const trimmed = emo.trim();
+                    if (!trimmed) return null;
+                    const emotionEmoji = getEmotionEmoji(trimmed);
+                    const emotionColors = {
+                      'fear': '#ef4444', 'anxiety': '#f97316', 'joy': '#10b981',
+                      'happiness': '#10b981', 'sadness': '#3b82f6', 'anger': '#dc2626',
+                      'peace': '#8b5cf6', 'wonder': '#fbbf24', 'confusion': '#6b7280',
+                      'excitement': '#ec4899', 'calm': '#06b6d4', 'love': '#f472b6',
+                      'curiosity': '#8b5cf6', 'anticipation': '#a78bfa'
+                    };
+                    const color = emotionColors[trimmed.toLowerCase()] || '#6366f1';
+                    return (
+                      <span 
+                        key={idx} 
+                        className="emotion-tag-creative" 
+                        style={{ 
+                          background: `linear-gradient(135deg, ${color}40, ${color}20)`,
+                          borderColor: color,
+                          color: color,
+                          animationDelay: `${idx * 0.1}s`
+                        }}
+                      >
+                        <span className="emotion-sparkle">{emotionEmoji}</span>
+                        {trimmed}
+                      </span>
+                    );
+                  })
+                  .filter(item => item !== null)}
+              </div>
+            ) : (
+              <p className="no-emotions-creative">No emotions recorded</p>
+            )}
+          </div>
 
           {dream.interpretation.image_url && (
-            <>
-              <h4>Dream image</h4>
-              <img
-                src={dream.interpretation.image_url}
-                alt="Dream interpretation"
-                className="dream-image"
-              />
-            </>
+            <div className="dream-image-section-creative">
+              <div className="section-header-small">
+                <span className="section-icon-small">🖼️</span>
+                <h4>Dream Image</h4>
+              </div>
+              <div className="dream-image-wrapper-creative">
+                <img
+                  src={dream.interpretation.image_url}
+                  alt="Dream interpretation"
+                  className="dream-image-creative"
+                />
+                <div className="dream-image-glow"></div>
+              </div>
+            </div>
           )}
         </div>
       )}
 
       {/* Style Rewrite Section */}
-      <div className="dream-rewrite">
-        <h3>Transform Your Dream</h3>
-        <p className="rewrite-description">
-          Reimagine your dream in different narrative styles
-        </p>
+      <div className="dream-rewrite-creative">
+        <div className="section-header-creative">
+          <span className="section-icon">🎭</span>
+          <div>
+            <h3>Transform Your Dream</h3>
+            <p className="rewrite-description-creative">
+              Reimagine your dream in different narrative styles
+            </p>
+          </div>
+        </div>
 
-        <div className="style-buttons">
+        <div className="style-buttons-creative">
           {STYLES.map((style) => (
             <button
               key={style.value}
-              className={`style-button ${selectedStyle === style.value ? "active" : ""}`}
+              className={`style-button-creative ${selectedStyle === style.value ? "active" : ""}`}
               onClick={() => handleRewrite(style.value)}
               disabled={rewriting}
             >
-              <span className="style-icon">{style.icon}</span>
-              <span className="style-label">{style.label}</span>
+              <span className="style-icon-creative">{style.icon}</span>
+              <span className="style-label-creative">{style.label}</span>
             </button>
           ))}
         </div>
@@ -437,14 +694,8 @@ export default function DreamDetail() {
               </div>
             </div>
             <div className="rewrite-comparison">
-              <div className="original-version">
-                <h5>Original</h5>
-                <p className="dream-text-compact">{dream?.raw_text || ''}</p>
-              </div>
-              <div className="arrow">→</div>
               <div className="transformed-version">
-                <h5>Transformed</h5>
-                <p className="rewritten-text">{rewritten.rewritten_narrative}</p>
+                <div className="rewritten-text">{rewritten.rewritten_narrative}</div>
               </div>
             </div>
           </div>
