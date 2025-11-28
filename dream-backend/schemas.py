@@ -61,6 +61,10 @@ class VerifyOTPRequest(BaseModel):
     otp_code: str
 
 
+class ResendOTPRequest(BaseModel):
+    email: EmailStr
+
+
 # ---------- Dreams ----------
 class DreamCreate(BaseModel):
     title: str

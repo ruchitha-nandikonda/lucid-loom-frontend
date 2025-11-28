@@ -129,6 +129,10 @@ export function verifyOTP(email, otpCode, password = null) {
   return api.post("/auth/verify-otp", payload);
 }
 
+export function resendOTP(email) {
+  return api.post("/auth/resend-otp", { email });
+}
+
 export function loginUser(email, password) {
   const formData = new URLSearchParams();
   formData.append("username", email);

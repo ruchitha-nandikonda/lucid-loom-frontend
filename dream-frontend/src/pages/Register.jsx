@@ -31,11 +31,11 @@ export default function Register() {
       
       // Redirect to OTP verification page
       if (response.data.message) {
-        // Show generic success message (OTP should only be in email)
-        setSuccess("Registration successful! Please check your email for the verification code.");
+        // Show success message with spam folder reminder
+        setSuccess("Registration successful! Please check your email (including spam folder) for the verification code.");
         setTimeout(() => {
           navigate(`/verify-otp?email=${encodeURIComponent(email)}`, { replace: true });
-        }, 1500);
+        }, 2000);
       } else {
         setError("Registration response missing. Please try again.");
         setLoading(false);

@@ -92,7 +92,7 @@ export default function Login() {
           required
         />
 
-        <div style={{ display: "flex", alignItems: "center", gap: 8, margin: "0.25rem 0 0.75rem" }}>
+        <div className="remember-me-container">
           <input
             id="remember"
             type="checkbox"

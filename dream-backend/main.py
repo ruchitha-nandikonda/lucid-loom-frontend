@@ -268,6 +268,74 @@ def verify_otp(request: schemas.VerifyOTPRequest, db: Session = Depends(get_db))
     }
 
 
+@app.post("/auth/resend-otp")
+def resend_otp(request: schemas.ResendOTPRequest, db: Session = Depends(get_db)):
+    """Resend OTP for email verification"""
+    from datetime import datetime, timedelta
+    import random
+    import os
+    
+    user = auth.get_user_by_email(db, request.email)
+    if not user:
+        raise HTTPException(status_code=400, detail="User not found. Please register first.")
+    
+    # Check if email already verified
+    if user.email_verified == "True":
+        raise HTTPException(status_code=400, detail="Email already verified. Please login.")
+    
+    # Rate limiting: Check if OTP was sent recently (within last 60 seconds)
+    # OTP expires 10 minutes (600 seconds) after being sent
+    # If expiration is more than 9 minutes away, it was sent less than 60 seconds ago
+    if user.otp_expires:
+        seconds_until_expiry = (user.otp_expires - datetime.utcnow()).total_seconds()
+        if seconds_until_expiry > 540:  # More than 9 minutes until expiry = sent less than 60 seconds ago
+            seconds_since_sent = 600 - seconds_until_expiry
+            wait_time = 60 - seconds_since_sent
+            if wait_time > 0:
+                raise HTTPException(
+                    status_code=429,
+                    detail=f"Please wait {int(wait_time)} seconds before requesting another code."
+                )
+    
+    # Generate new OTP
+    otp_code = str(random.randint(100000, 999999))
+    otp_expires = datetime.utcnow() + timedelta(minutes=10)
+    
+    # Update user with new OTP
+    user.otp_code = otp_code
+    user.otp_expires = otp_expires
+    db.commit()
+    
+    # Send OTP email
+    from email_service import send_otp_email
+    email_sent = send_otp_email(request.email, otp_code)
+    
+    # Log OTP for backend debugging only
+    print(f"\n{'='*60}")
+    print(f"🔐 OTP Resent for {request.email}")
+    print(f"   OTP Code: {otp_code}")
+    print(f"   Valid for: 10 minutes")
+    print(f"   Email sent: {email_sent}")
+    print(f"{'='*60}\n")
+    
+    if not email_sent:
+        print(f"⚠️ Failed to resend OTP email to {request.email}")
+        print(f"   Check email configuration in .env file")
+        print(f"   SENDGRID_FROM_EMAIL must be a verified email in SendGrid")
+        print(f"   Current SENDGRID_FROM_EMAIL: {os.getenv('SENDGRID_FROM_EMAIL', 'NOT SET')}")
+        print(f"   OTP Code (for admin/debugging only): {otp_code}")
+        raise HTTPException(
+            status_code=500,
+            detail="Failed to send verification email. Please check your email configuration or try again later."
+        )
+    
+    return {
+        "message": "A new verification code has been sent to your email. Please check your inbox and spam folder.",
+        "email": request.email,
+        "otp_sent": email_sent
+    }
+
+
 @app.post("/auth/login")
 def login(
     form_data: OAuth2PasswordRequestForm = Depends(),

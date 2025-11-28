@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useSearchParams, useNavigate, Link } from "react-router-dom";
-import { verifyOTP, registerUser, setAuthToken, getToken } from "../api";
+import { verifyOTP, resendOTP, setAuthToken, getToken } from "../api";
 
 export default function VerifyOTP() {
   const [searchParams] = useSearchParams();
@@ -71,12 +71,14 @@ export default function VerifyOTP() {
     setSuccess("");
     setLoading(true);
     try {
-      // For resend, we need password - but we don't have it stored
-      // So we'll just show a message to re-register
-      setError("Please go back and register again to receive a new code.");
+      console.log("📧 Resending OTP to:", email);
+      const response = await resendOTP(email);
+      console.log("✅ Resend OTP response:", response);
+      setSuccess(response.data.message || "A new verification code has been sent to your email.");
       setLoading(false);
     } catch (err) {
-      setError(err.response?.data?.detail || "Failed to resend code");
+      console.error("❌ Resend OTP error:", err);
+      setError(err.response?.data?.detail || "Failed to resend code. Please try again.");
       setLoading(false);
     }
   }
@@ -86,6 +88,10 @@ export default function VerifyOTP() {
       <h2>Verify Your Email</h2>
       <p style={{ color: "#6b7280", marginBottom: "20px" }}>
         We've sent a verification code to <strong>{email}</strong>
+        <br />
+        <span style={{ fontSize: "0.85rem", color: "#9ca3af", marginTop: "0.5rem", display: "block" }}>
+          📧 Don't see it? Check your spam/junk folder!
+        </span>
       </p>
       <form onSubmit={handleVerifyOTP}>
         <label>Verification Code</label>
@@ -108,15 +114,22 @@ export default function VerifyOTP() {
       </form>
       <p style={{ marginTop: "20px", textAlign: "center" }}>
         Didn't receive the code?{" "}
-        <Link
-          to="/register"
+        <button
+          type="button"
+          onClick={handleResendOTP}
+          disabled={loading}
           style={{
+            background: "none",
+            border: "none",
             color: "#6366f1",
             textDecoration: "underline",
+            cursor: loading ? "not-allowed" : "pointer",
+            padding: 0,
+            fontSize: "inherit",
           }}
         >
-          Register again
-        </Link>
+          {loading ? "Sending..." : "Resend code"}
+        </button>
       </p>
       <p style={{ marginTop: "10px", textAlign: "center" }}>
         <Link
