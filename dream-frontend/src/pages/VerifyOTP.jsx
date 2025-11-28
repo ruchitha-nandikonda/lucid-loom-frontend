@@ -112,25 +112,19 @@ export default function VerifyOTP() {
           {loading ? "Verifying..." : "Verify Email"}
         </button>
       </form>
-      <p style={{ marginTop: "20px", textAlign: "center" }}>
-        Didn't receive the code?{" "}
+      <div style={{ marginTop: "1.5rem", textAlign: "center" }}>
+        <p style={{ color: "#9ca3af", marginBottom: "0.75rem", fontSize: "0.9rem" }}>
+          Didn't receive the code?
+        </p>
         <button
           type="button"
           onClick={handleResendOTP}
           disabled={loading}
-          style={{
-            background: "none",
-            border: "none",
-            color: "#6366f1",
-            textDecoration: "underline",
-            cursor: loading ? "not-allowed" : "pointer",
-            padding: 0,
-            fontSize: "inherit",
-          }}
+          className="resend-otp-button"
         >
-          {loading ? "Sending..." : "Resend code"}
+          {loading ? "Sending..." : "📧 Resend Code"}
         </button>
-      </p>
+      </div>
       <p style={{ marginTop: "10px", textAlign: "center" }}>
         <Link
           to="/login"
