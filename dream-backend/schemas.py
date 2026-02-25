@@ -54,6 +54,8 @@ class RegisterResponse(BaseModel):
     message: str
     email: EmailStr
     otp_sent: bool = False
+    access_token: Optional[str] = None
+    token_type: str = "bearer"
 
 
 class VerifyOTPRequest(BaseModel):

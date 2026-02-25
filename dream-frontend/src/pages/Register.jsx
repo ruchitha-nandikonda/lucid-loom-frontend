@@ -29,13 +29,13 @@ export default function Register() {
       const response = await registerUser(email, password, firstName.trim(), lastName.trim());
       console.log("✅ Registration response:", response);
       
-      // Redirect to OTP verification page
-      if (response.data.message) {
-        // Show success message with spam folder reminder
-        setSuccess("Registration successful! Please check your email (including spam folder) for the verification code.");
+      // Log in immediately (no OTP verification)
+      if (response.data.access_token) {
+        setAuthToken(response.data.access_token);
+        setSuccess("Account created! Redirecting...");
         setTimeout(() => {
-          navigate(`/verify-otp?email=${encodeURIComponent(email)}`, { replace: true });
-        }, 2000);
+          navigate("/", { replace: true });
+        }, 500);
       } else {
         setError("Registration response missing. Please try again.");
         setLoading(false);

@@ -153,31 +153,26 @@ def register(
     user_in: schemas.UserCreate,
     db: Session = Depends(get_db)
 ):
-    """Register a new user - sends OTP for email verification"""
-    from datetime import datetime, timedelta
-    import random
-    
+    """Register a new user - no OTP, user is logged in immediately"""
     existing = auth.get_user_by_email(db, user_in.email)
     if existing and existing.email_verified == "True":
         raise HTTPException(status_code=400, detail="Email already registered. Please log in.")
     
-    # Generate OTP
-    otp_code = str(random.randint(100000, 999999))
-    otp_expires = datetime.utcnow() + timedelta(minutes=10)
-    
     if existing:
         # Update existing unverified user
-        print(f"🔐 Register: User {user_in.email} exists but not verified, updating and sending new OTP")
+        print(f"🔐 Register: User {user_in.email} exists but not verified, updating and activating")
         hashed = auth.hash_password(user_in.password)
         existing.hashed_password = hashed
         existing.first_name = user_in.first_name
         existing.last_name = user_in.last_name
         if not existing.username:
             existing.username = generate_username(user_in.first_name, user_in.last_name, db)
-        existing.otp_code = otp_code
-        existing.otp_expires = otp_expires
-        existing.email_verified = "False"
+        existing.otp_code = None
+        existing.otp_expires = None
+        existing.email_verified = "True"
         db.commit()
+        db.refresh(existing)
+        user = existing
     else:
         # Create new user
         hashed = auth.hash_password(user_in.password)
@@ -191,44 +186,24 @@ def register(
             first_name=user_in.first_name,
             last_name=user_in.last_name,
             hashed_password=hashed,
-            otp_code=otp_code,
-            otp_expires=otp_expires,
-            email_verified="False"
+            otp_code=None,
+            otp_expires=None,
+            email_verified="True"
         )
         db.add(new_user)
         db.commit()
+        db.refresh(new_user)
+        user = new_user
     
-    # Send OTP email
-    from email_service import send_otp_email
-    import os
-    email_sent = send_otp_email(user_in.email, otp_code)
+    # Generate access token - user is logged in immediately
+    access_token = auth.create_access_token(data={"sub": user.email})
     
-    # Log OTP for backend debugging only (not shown to user)
-    print(f"\n{'='*60}")
-    print(f"🔐 OTP Generated for {user_in.email}")
-    print(f"   OTP Code: {otp_code}")
-    print(f"   Valid for: 10 minutes")
-    print(f"   Email sent: {email_sent}")
-    print(f"{'='*60}\n")
-    
-    if not email_sent:
-        print(f"⚠️ Failed to send OTP email to {user_in.email}")
-        print(f"   Check email configuration in .env file")
-        print(f"   SENDGRID_FROM_EMAIL must be a verified email in SendGrid")
-        print(f"   Current SENDGRID_FROM_EMAIL: {os.getenv('SENDGRID_FROM_EMAIL', 'NOT SET')}")
-        print(f"   OTP Code (for admin/debugging only): {otp_code}")
-        # Don't fail registration - allow user to verify later or contact support
-        return {
-            "message": "Registration successful! However, we couldn't send the verification email. Please check your email configuration in the backend .env file (SENDGRID_FROM_EMAIL must be a verified email).",
-            "email": user_in.email,
-            "otp_sent": False
-        }
-    
-    # Success - email sent
     return {
-        "message": "Registration successful! Please check your email for the verification code.",
+        "message": "Account created successfully!",
         "email": user_in.email,
-        "otp_sent": email_sent
+        "otp_sent": False,
+        "access_token": access_token,
+        "token_type": "bearer"
     }
 
 
