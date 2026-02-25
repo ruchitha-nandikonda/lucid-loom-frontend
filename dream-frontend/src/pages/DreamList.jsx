@@ -442,7 +442,7 @@ export default function DreamList() {
       // Common dream themes
       'lost': '🔍', 'searching': '🔍', 'finding': '🔍',
       'chasing': '🏃', 'running away': '🏃',
-      'falling': '⬇️', 'flying': '✈️',
+      'falling': '⬇️',
     };
 
     // Check for keywords in the text (prioritize longer/more specific matches)
